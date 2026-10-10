@@ -1,0 +1,62 @@
+import React from 'react';
+import { useLanguage } from '../i18n/index.jsx';
+import { HelpCircle, ArrowLeft, ExternalLink } from 'lucide-react';
+
+export default function FaqPage({ onNavigate }) {
+  const { t } = useLanguage();
+
+  return (
+    <div className="container" style={{ maxWidth: 800 }}>
+      <button onClick={() => onNavigate('home')} className="btn btn-secondary" style={{ marginBottom: 20, padding: '6px 12px', fontSize: 13 }}>
+        <ArrowLeft size={14} /> {t('home')} / Back
+      </button>
+
+      <div className="card" style={{ padding: 32, marginBottom: 30 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <HelpCircle size={28} color="var(--primary-400)" />
+          <h1 style={{ fontSize: 26, margin: 0 }}>ተደጋግመው የሚጠየቁ ጥያቄዎች (FAQ)</h1>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
+          ስለ DV-2027 ፕሮግራም፣ ስለ ቅጽ አሞላል እና ስለ [BRAND] አሰራር በተደጋጋሚ ለሚነሱ ጥያቄዎች የተሰጡ ይፋዊ ማብራሪያዎች።
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>1. [BRAND] ምንድን ነው? ከአሜሪካ ኤምባሲ ጋር ግንኙነት አለው?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <strong>መልስ:</strong> በፍጹም! [BRAND] ራሱን የቻለ የቴክኖሎጂና የማመልከቻ አጋዥ አገልግሎት እንጂ ከአሜሪካ መንግስት፣ ከስቴት ዲፓርትመንት ወይም ከኤምባሲ ጋር ምንም አይነት ግንኙነት የለውም። ይፋዊው የዲቪ ሎተሪ ማመልከቻ በ <strong>dvprogram.state.gov</strong> በነፃ የሚሞላ ሲሆን የእኛ ክፍያ ዶላር ካርድ ለሌላቸው ኢትዮጵያውያን ቅጻቸውን በአማርኛ እንዲሞሉ፣ ፎቶግራፋቸውን በባለሙያ እንዲያስተካክሉ እና በይፋዊው ድረ-ገጽ እንዲመዘገቡ የሚደረግ የአገልግሎት ክፍያ ነው።
+            </p>
+          </div>
+
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>2. ለDV-2027 ለማመልከት ፓስፖርት ያስፈልገኛል?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <strong>መልስ:</strong> አይያስፈልግዎትም! እ.ኤ.አ በ2022 በአሜሪካ ፌደራል ፍርድ ቤት ውሳኔ መሰረት የፓስፖርት ህግ ተሰርዟል። ስለዚህ ለDV-2024, DV-2025 እና DV-2026 ምዝገባዎች ፓስፖርት አላስፈለገም። ለDV-2027 ምዝገባም ፓስፖርት ሳይኖርዎት በልደት መረጃዎ ብቻ ማመልከት ይችላሉ።
+            </p>
+          </div>
+
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>3. የፎቶግራፍ መስፈርቶች ምንድን ናቸው?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <strong>መልስ:</strong> ፎቶው ባለ 600x600 ፒክሰል መጠን ያለው፣ ነጭ ጀርባ ያለው፣ መነፅር የሌለበት እና በቅርብ 6 ወራት ውስጥ የተነሳ መሆን አለበት። የእኛ ዌብሳይት ፎቶዎን በቀጥታ ቆርጦና አስተካክሎ ወደ ትክክለኛው የዲቪ መስፈርት ይቀይርልዎታል።
+            </p>
+          </div>
+
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>4. ይፋዊው የማረጋገጫ ቁጥር (Confirmation Number) እንዴት ይደርሰኛል?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <strong>መልስ:</strong> ኦፕሬተሮቻችን ማመልከቻዎን በይፋዊው ድረ-ገጽ እንዳስገቡ ወዲያውኑ ባለ 16 ዲጂት ቁጥሩ በቴሌግራም ቦት፣ በኢሜል እንዲሁም በዚህ ድረ-ገጽ ላይ ባለው አካውንትዎ ውስጥ ይላክልዎታል። ቁጥሩ ሙሉ በሙሉ የእርስዎ የግል ንብረት ነው።
+            </p>
+          </div>
+
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>5. ውጤት የሚታወቀው መቼ ነው?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <strong>መልስ:</strong> የDV-2027 ውጤት በሜይ ወር በ <strong>dvprogram.state.gov</strong> ላይ በይፋ ይፋ ይሆናል። የተሰጠዎትን የማረጋገጫ ቁጥር በመጠቀም በግልዎ ውጤትዎን ማየት ይችላሉ።
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

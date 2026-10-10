@@ -1,0 +1,26 @@
+{
+  "name": "dvfilltrack-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "[BRAND] DV-2027 Registration Assistance Platform for Ethiopia",
+  "workspaces": [
+    "api",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=client",
+    "dev:api": "npm run dev --workspace=api",
+    "build": "npm run build --workspace=client",
+    "start": "npm run start --workspace=api"
+  },
+  "keywords": [
+    "dv-lottery",
+    "dv-2027",
+    "ethiopia",
+    "pwa",
+    "express",
+    "mern"
+  ],
+  "author": "DVFillTrack Team",
+  "license": "UNLICENSED"
+}
