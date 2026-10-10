@@ -45,7 +45,7 @@ async function seedDefaultAccounts() {
   }
 }
 
-// Ensure database connection middleware for serverless invocations
+// Serverless handler export (in case invoked as a serverless function)
 const serverlessHandler = async (req, res) => {
   try {
     await connectDB();
@@ -55,22 +55,21 @@ const serverlessHandler = async (req, res) => {
   return app(req, res);
 };
 
-// Start standalone HTTP server when executed locally
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  connectDB()
-    .then(async () => {
-      await seedDefaultAccounts();
-      app.listen(ENV.PORT, () => {
-        console.log(`🚀 EthioDV-FillTrack API Server listening on http://localhost:${ENV.PORT}`);
-      });
-    })
-    .catch((err) => {
-      console.error('Could not connect to database on startup:', err.message);
-      // Still listen so health and mock routes respond
-      app.listen(ENV.PORT, () => {
-        console.log(`⚠️ API Server listening on http://localhost:${ENV.PORT} (Waiting for MongoDB connection...)`);
-      });
+// Always listen on designated port (Vercel Services, Render, or Local)
+const port = process.env.PORT || ENV.PORT || 5000;
+connectDB()
+  .then(async () => {
+    await seedDefaultAccounts();
+    app.listen(port, () => {
+      console.log(`🚀 EthioDV-FillTrack API Server listening on port ${port}`);
     });
-}
+  })
+  .catch((err) => {
+    console.error('Could not connect to database on startup:', err.message);
+    app.listen(port, () => {
+      console.log(`⚠️ API Server listening on port ${port} (Waiting for MongoDB connection...)`);
+    });
+  });
 
 export default serverlessHandler;
+
