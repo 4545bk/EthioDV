@@ -31,9 +31,9 @@ export default function LandingPage({ onNavigate }) {
       <section style={{ padding: '40px 0 60px 0', textAlign: 'center' }}>
         <div className="container" style={{ maxWidth: 840 }}>
           {/* Capacity Status Badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 9999, background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', marginBottom: 20 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 9999, background: 'rgba(124, 58, 237, 0.1)', border: '1px solid rgba(124, 58, 237, 0.25)', marginBottom: 20 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-            <span style={{ fontSize: 13, color: 'var(--primary-300)', fontWeight: 600 }}>
+            <span style={{ fontSize: 13, color: 'var(--primary-600)', fontWeight: 600 }}>
               DV-2027 ምዝገባ ክፍት ነው | Registration Active ({settings?.approvedToday || 0}/{settings?.maxDailyCapacity || 160} today)
             </span>
           </div>
@@ -88,9 +88,9 @@ export default function LandingPage({ onNavigate }) {
       {/* Pricing & Transparency Card */}
       <section style={{ padding: '20px 0 50px 0' }}>
         <div className="container" style={{ maxWidth: 760 }}>
-          <div className="card animate-pulse-glow" style={{ border: '1px solid rgba(99, 102, 241, 0.4)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)', textAlign: 'center', padding: 36 }}>
-            <span className="badge badge-success" style={{ marginBottom: 12 }}>ግልጽ የአገልግሎት ዋጋ / Transparent Flat Fee</span>
-            <h2 style={{ fontSize: 32, marginBottom: 8 }}>
+          <div className="card" style={{ border: '1.5px solid rgba(124, 58, 237, 0.3)', textAlign: 'center', padding: '40px 32px', borderRadius: 'var(--radius-lg)' }}>
+            <span className="badge badge-success" style={{ marginBottom: 14, padding: '6px 16px' }}>ግልጽ የአገልግሎት ዋጋ / Transparent Flat Fee</span>
+            <h2 style={{ fontSize: 36, marginBottom: 8 }}>
               {settings?.priceETB || 1000} ETB <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 400 }}>/ ለአንድ ማመልከቻ</span>
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, maxWidth: 520, margin: '0 auto 24px auto' }}>
@@ -178,23 +178,23 @@ export default function LandingPage({ onNavigate }) {
           </h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div className="card" style={{ padding: 18 }}>
-              <h4 style={{ fontSize: 15, marginBottom: 6, color: '#ffffff' }}>ይፋዊው የማረጋገጫ ቁጥር (Confirmation Number) የማን ነው?</h4>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <div className="card" style={{ padding: 20, borderRadius: 'var(--radius-md)' }}>
+              <h4 style={{ fontSize: 15, marginBottom: 6, color: 'var(--text-main)', fontWeight: 700 }}>ይፋዊው የማረጋገጫ ቁጥር (Confirmation Number) የማን ነው?</h4>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 የእርስዎ የግል ንብረት ነው። ማመልከቻዎ እንደተገባ ሙሉ ባለ 16 ዲጂት ቁጥሩ በቴሌግራም፣ በኢሜል እንዲሁም በዌብሳይቱ ላይ ወዲያውኑ ይሰጥዎታል። በሜይ ወር ውጤትዎን በ dvprogram.state.gov በግልዎ ማየት ይችላሉ።
               </p>
             </div>
 
-            <div className="card" style={{ padding: 18 }}>
-              <h4 style={{ fontSize: 15, marginBottom: 6, color: '#ffffff' }}>ፓስፖርት ግዴታ ነው?</h4>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <div className="card" style={{ padding: 20, borderRadius: 'var(--radius-md)' }}>
+              <h4 style={{ fontSize: 15, marginBottom: 6, color: 'var(--text-main)', fontWeight: 700 }}>ፓስፖርት ግዴታ ነው?</h4>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 በቅርብ ዓመታት የዲቪ ህግ መሰረት ለሎተሪው ለመመዝገብ ፓስፖርት ግዴታ አይደለም። ትክክለኛ የልደት መረጃና መስፈርቱን የሚያሟላ ፎቶግራፍ ብቻ በቂ ነው።
               </p>
             </div>
 
-            <div className="card" style={{ padding: 18 }}>
-              <h4 style={{ fontSize: 15, marginBottom: 6, color: '#ffffff' }}>ገንዘቤ ተመላሽ የሚደረገው በምን ሁኔታ ነው?</h4>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <div className="card" style={{ padding: 20, borderRadius: 'var(--radius-md)' }}>
+              <h4 style={{ fontSize: 15, marginBottom: 6, color: 'var(--text-main)', fontWeight: 700 }}>ገንዘቤ ተመላሽ የሚደረገው በምን ሁኔታ ነው?</h4>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 ቡድናችን ማመልከቻዎን በጊዜ ገደቡ ውስጥ ማስገባት ካልቻለ 100% ሙሉ ክፍያዎ ይመለሳል። ክፍያዎ ፀድቆ ወደ አሜሪካ ድረ-ገጽ ከመግባቱ በፊት ማመልከቻዎን ማቋረጥ ከፈለጉ 50% ተመላሽ ይደረጋል። ማመልከቻው ከገባ ግን ተመላሽ አይደረግም።
               </p>
             </div>

@@ -21,36 +21,36 @@ export default function FaqPage({ onNavigate }) {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>1. [BRAND] ምንድን ነው? ከአሜሪካ ኤምባሲ ጋር ግንኙነት አለው?</h3>
+          <div className="sub-card">
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>1. [BRAND] ምንድን ነው? ከአሜሪካ ኤምባሲ ጋር ግንኙነት አለው?</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <strong>መልስ:</strong> በፍጹም! [BRAND] ራሱን የቻለ የቴክኖሎጂና የማመልከቻ አጋዥ አገልግሎት እንጂ ከአሜሪካ መንግስት፣ ከስቴት ዲፓርትመንት ወይም ከኤምባሲ ጋር ምንም አይነት ግንኙነት የለውም። ይፋዊው የዲቪ ሎተሪ ማመልከቻ በ <strong>dvprogram.state.gov</strong> በነፃ የሚሞላ ሲሆን የእኛ ክፍያ ዶላር ካርድ ለሌላቸው ኢትዮጵያውያን ቅጻቸውን በአማርኛ እንዲሞሉ፣ ፎቶግራፋቸውን በባለሙያ እንዲያስተካክሉ እና በይፋዊው ድረ-ገጽ እንዲመዘገቡ የሚደረግ የአገልግሎት ክፍያ ነው።
             </p>
           </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>2. ለDV-2027 ለማመልከት ፓስፖርት ያስፈልገኛል?</h3>
+          <div className="sub-card">
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>2. ለDV-2027 ለማመልከት ፓስፖርት ያስፈልገኛል?</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <strong>መልስ:</strong> አይያስፈልግዎትም! እ.ኤ.አ በ2022 በአሜሪካ ፌደራል ፍርድ ቤት ውሳኔ መሰረት የፓስፖርት ህግ ተሰርዟል። ስለዚህ ለDV-2024, DV-2025 እና DV-2026 ምዝገባዎች ፓስፖርት አላስፈለገም። ለDV-2027 ምዝገባም ፓስፖርት ሳይኖርዎት በልደት መረጃዎ ብቻ ማመልከት ይችላሉ።
             </p>
           </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>3. የፎቶግራፍ መስፈርቶች ምንድን ናቸው?</h3>
+          <div className="sub-card">
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>3. የፎቶግራፍ መስፈርቶች ምንድን ናቸው?</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <strong>መልስ:</strong> ፎቶው ባለ 600x600 ፒክሰል መጠን ያለው፣ ነጭ ጀርባ ያለው፣ መነፅር የሌለበት እና በቅርብ 6 ወራት ውስጥ የተነሳ መሆን አለበት። የእኛ ዌብሳይት ፎቶዎን በቀጥታ ቆርጦና አስተካክሎ ወደ ትክክለኛው የዲቪ መስፈርት ይቀይርልዎታል።
             </p>
           </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>4. ይፋዊው የማረጋገጫ ቁጥር (Confirmation Number) እንዴት ይደርሰኛል?</h3>
+          <div className="sub-card">
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>4. ይፋዊው የማረጋገጫ ቁጥር (Confirmation Number) እንዴት ይደርሰኛል?</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <strong>መልስ:</strong> ኦፕሬተሮቻችን ማመልከቻዎን በይፋዊው ድረ-ገጽ እንዳስገቡ ወዲያውኑ ባለ 16 ዲጂት ቁጥሩ በቴሌግራም ቦት፣ በኢሜል እንዲሁም በዚህ ድረ-ገጽ ላይ ባለው አካውንትዎ ውስጥ ይላክልዎታል። ቁጥሩ ሙሉ በሙሉ የእርስዎ የግል ንብረት ነው።
             </p>
           </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: 18, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-            <h3 style={{ fontSize: 16, marginBottom: 8, color: '#ffffff' }}>5. ውጤት የሚታወቀው መቼ ነው?</h3>
+          <div className="sub-card">
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>5. ውጤት የሚታወቀው መቼ ነው?</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <strong>መልስ:</strong> የDV-2027 ውጤት በሜይ ወር በ <strong>dvprogram.state.gov</strong> ላይ በይፋ ይፋ ይሆናል። የተሰጠዎትን የማረጋገጫ ቁጥር በመጠቀም በግልዎ ውጤትዎን ማየት ይችላሉ።
             </p>

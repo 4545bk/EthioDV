@@ -186,9 +186,9 @@ export default function FormWizardPage({ onNavigate, entryId }) {
         </div>
       )}
 
-      {/* Stepper Wizard Bar */}
-      <div className="card" style={{ padding: '16px 20px', marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
+      {/* Aspio Numbered Stepper Wizard Bar */}
+      <div className="card" style={{ padding: '18px 20px', marginBottom: 24, borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
           {[
             { step: 1, label: t('stepBio') },
             { step: 2, label: t('stepPhoto') },
@@ -196,30 +196,69 @@ export default function FormWizardPage({ onNavigate, entryId }) {
             { step: 4, label: t('stepEducation') },
             { step: 5, label: t('stepDerivatives') },
             { step: 6, label: t('stepReview') },
-          ].map((item) => (
-            <div key={item.step} style={{ textAlign: 'center', flex: 1, cursor: 'pointer' }} onClick={() => setCurrentStep(item.step)}>
+          ].map((item, index) => {
+            const isActive = currentStep === item.step;
+            const isCompleted = currentStep > item.step;
+
+            return (
               <div
+                key={item.step}
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  margin: '0 auto 6px auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  background: currentStep === item.step ? 'var(--primary-500)' : currentStep > item.step ? 'var(--success)' : 'rgba(30, 41, 59, 0.8)',
-                  color: '#ffffff',
+                  textAlign: 'center',
+                  flex: 1,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  zIndex: 2,
                 }}
+                onClick={() => setCurrentStep(item.step)}
               >
-                {currentStep > item.step ? '✓' : item.step}
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    margin: '0 auto 8px auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    background: isActive
+                      ? 'var(--primary-600)'
+                      : isCompleted
+                      ? 'var(--success)'
+                      : 'var(--bg-input)',
+                    color: isActive || isCompleted ? '#ffffff' : 'var(--text-subtle)',
+                    border: isActive
+                      ? '2px solid var(--primary-600)'
+                      : isCompleted
+                      ? '2px solid var(--success)'
+                      : '1.5px solid var(--border-subtle)',
+                    boxShadow: isActive
+                      ? '0 0 0 4px rgba(124, 58, 237, 0.22), 0 4px 12px rgba(124, 58, 237, 0.35)'
+                      : 'none',
+                    transition: 'all var(--transition-normal)',
+                  }}
+                >
+                  {isCompleted ? '✓' : item.step}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? 'var(--primary-600)' : 'var(--text-muted)',
+                    transition: 'color var(--transition-fast)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    padding: '0 2px',
+                  }}
+                >
+                  {item.label}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: currentStep === item.step ? '#ffffff' : 'var(--text-muted)', fontWeight: currentStep === item.step ? 600 : 400 }}>
-                {item.label}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

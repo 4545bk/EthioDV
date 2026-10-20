@@ -203,15 +203,7 @@ export default function PhotoUploadCrop({ onPhotoUploaded, existingPhotoKey, lab
       {!imageSrc ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          style={{
-            border: '2px dashed var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            padding: '30px 20px',
-            textAlign: 'center',
-            cursor: 'pointer',
-            background: 'rgba(15, 23, 42, 0.4)',
-            transition: 'all var(--transition-fast)',
-          }}
+          className="upload-dropzone"
         >
           <input
             ref={fileInputRef}
@@ -220,7 +212,20 @@ export default function PhotoUploadCrop({ onPhotoUploaded, existingPhotoKey, lab
             onChange={handleFileChange}
             style={{ display: 'none' }}
           />
-          <Upload size={32} color="var(--primary-400)" style={{ margin: '0 auto 10px auto' }} />
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: 'rgba(124, 58, 237, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px auto',
+            }}
+          >
+            <Upload size={24} color="var(--primary-600)" />
+          </div>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)', marginBottom: 4 }}>
             Click to upload photo or take picture
           </p>

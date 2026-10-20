@@ -141,39 +141,59 @@ export default function PaymentPage({ onNavigate, entryId }) {
         <ArrowLeft size={14} /> ማመልከቻዎቼ / Back
       </button>
 
-      <div className="card" style={{ padding: 32 }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <span className="badge badge-warning" style={{ marginBottom: 8 }}>ደረጃ 2: ክፍያ / Step 2: Payment</span>
-          <h2 style={{ fontSize: 24, marginBottom: 6 }}>{t('paymentTitle')}</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('paymentDesc')}</p>
+      <div className="card" style={{ padding: '36px 30px', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <span className="badge badge-primary" style={{ marginBottom: 12, padding: '5px 14px', fontSize: 12 }}>
+            ደረጃ 2: ክፍያ / Step 2: Payment
+          </span>
+          <h2 style={{ fontSize: 26, marginBottom: 8 }}>{t('paymentTitle')}</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{t('paymentDesc')}</p>
         </div>
 
         {/* Unique Reference Code Display */}
         {entry && (
-          <div style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px dashed var(--primary-500)', borderRadius: 10, padding: 16, marginBottom: 24, textAlign: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--primary-300)', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(20, 184, 166, 0.08))',
+              border: '1.5px dashed var(--primary-400)',
+              borderRadius: 'var(--radius-md)',
+              padding: '18px 20px',
+              marginBottom: 24,
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ fontSize: 11, color: 'var(--primary-600)', textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 700 }}>
               {t('referenceCode')}
             </span>
-            <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 3, color: '#ffffff', margin: '4px 0', fontFamily: 'monospace' }}>
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: 4,
+                color: 'var(--primary-600)',
+                margin: '6px 0',
+                fontFamily: 'monospace',
+              }}
+            >
               {entry.uniqueReference}
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
               ክፍያውን ሲልኩ በማስታወሻ (Remark / Reason) ቦታ ላይ ይህን ኮድ ይፃፉ።
             </p>
           </div>
         )}
 
-        {/* Account Details Box */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: 10, padding: 20, marginBottom: 24, border: '1px solid var(--border-subtle)' }}>
-          <h4 style={{ fontSize: 14, color: '#38bdf8', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CreditCard size={16} /> ኦፊሴላዊ የክፍያ አካውንቶች / Official Payment Accounts
+        {/* Account Details Box (Aspio Clean Sub-Card) */}
+        <div className="sub-card" style={{ marginBottom: 24 }}>
+          <h4 style={{ fontSize: 14, color: 'var(--primary-600)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700 }}>
+            <CreditCard size={17} /> ኦፊሴላዊ የክፍያ አካውንቶች / Official Payment Accounts
           </h4>
 
           {/* Telebirr Details */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             <div>
-              <strong style={{ color: '#ffffff', fontSize: 14 }}>ቴሌብር (Telebirr):</strong>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              <strong style={{ color: 'var(--text-main)', fontSize: 14 }}>ቴሌብር (Telebirr):</strong>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
                 {settings?.telebirr?.phone || '0911234567'} ({settings?.telebirr?.name || 'DV Ethiopia'})
               </div>
             </div>
@@ -181,10 +201,10 @@ export default function PaymentPage({ onNavigate, entryId }) {
           </div>
 
           {/* CBE Details */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0' }}>
             <div>
-              <strong style={{ color: '#ffffff', fontSize: 14 }}>የኢትዮጵያ ንግድ ባንክ (CBE):</strong>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              <strong style={{ color: 'var(--text-main)', fontSize: 14 }}>የኢትዮጵያ ንግድ ባንክ (CBE):</strong>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
                 {settings?.cbe?.accountNumber || '1000123456789'} ({settings?.cbe?.accountName || 'DV Ethiopia'})
               </div>
             </div>
@@ -192,14 +212,20 @@ export default function PaymentPage({ onNavigate, entryId }) {
           </div>
         </div>
 
+        {/* Aspio Notice Policy Card */}
+        <div className="notice-box" style={{ marginBottom: 24 }}>
+          <strong style={{ display: 'block', marginBottom: 4 }}>⚠️ አስፈላጊ ማሳሰቢያ / Important Policy:</strong>
+          ክፍያው ፎርምዎን በስቴት ዲፓርትመንት መስፈርት መሰረት ለማዘጋጀትና ለመሙላት የሚከፈል የአገልግሎት ክፍያ ነው። ክፍያውን ከፈጸሙ በኋላ የተረጋገጠውን ደረሰኝ ከዚህ በታች ያያይዙ።
+        </div>
+
         {errorMessage && (
-          <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: 12, borderRadius: 'var(--radius-sm)', fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertCircle size={16} /> {errorMessage}
           </div>
         )}
 
         {successMessage && (
-          <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: 12, borderRadius: 'var(--radius-sm)', fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
             <CheckCircle2 size={16} /> {successMessage}
           </div>
         )}
@@ -208,24 +234,26 @@ export default function PaymentPage({ onNavigate, entryId }) {
         <form onSubmit={handleSubmitPayment}>
           <div className="form-group">
             <label className="form-label">የክፍያ ዘዴ / Payment Provider</label>
-            <div style={{ display: 'flex', gap: 14 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', gap: 18, marginTop: 4 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 500, fontSize: 14 }}>
                 <input
                   type="radio"
                   name="provider"
                   value="TELEBIRR"
                   checked={provider === 'TELEBIRR'}
                   onChange={(e) => setProvider(e.target.value)}
+                  style={{ accentColor: 'var(--primary-600)' }}
                 />
                 ቴሌብር (Telebirr)
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 500, fontSize: 14 }}>
                 <input
                   type="radio"
                   name="provider"
                   value="CBE_TRANSFER"
                   checked={provider === 'CBE_TRANSFER'}
                   onChange={(e) => setProvider(e.target.value)}
+                  style={{ accentColor: 'var(--primary-600)' }}
                 />
                 ንግድ ባንክ (CBE Transfer)
               </label>
@@ -255,18 +283,11 @@ export default function PaymentPage({ onNavigate, entryId }) {
             </div>
           </div>
 
-          {/* Receipt Upload Box */}
+          {/* Aspio Dashed Receipt Upload Box */}
           <div className="form-group">
             <label className="form-label">{t('uploadReceiptLabel')} *</label>
             <div
-              style={{
-                border: '2px dashed var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                padding: '24px 16px',
-                textAlign: 'center',
-                background: 'rgba(15, 23, 42, 0.4)',
-                cursor: 'pointer',
-              }}
+              className="upload-dropzone"
               onClick={() => document.getElementById('receipt-upload-input')?.click()}
             >
               <input
@@ -280,14 +301,31 @@ export default function PaymentPage({ onNavigate, entryId }) {
 
               {receiptPreview ? (
                 <div>
-                  <img src={receiptPreview} alt="Receipt preview" style={{ maxHeight: 180, borderRadius: 6, margin: '0 auto 10px auto', display: 'block' }} />
-                  <p style={{ fontSize: 12, color: 'var(--accent-400)' }}>✓ ደረሰኙ ተመርጧል (Click to change)</p>
+                  <img src={receiptPreview} alt="Receipt preview" style={{ maxHeight: 200, borderRadius: 12, margin: '0 auto 12px auto', display: 'block', boxShadow: 'var(--shadow-md)' }} />
+                  <p style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600 }}>✓ ደረሰኙ ተመርጧል (ለመቀየር ይጫኑ / Click to change)</p>
                 </div>
               ) : (
                 <div>
-                  <Upload size={28} color="var(--primary-400)" style={{ margin: '0 auto 8px auto' }} />
-                  <p style={{ fontSize: 13, color: 'var(--text-main)', fontWeight: 600 }}>የደረሰኝ ስክሪንሾት ይምረጡ / Upload Screenshot</p>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>JPG, PNG or PDF</p>
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: '50%',
+                      background: 'rgba(124, 58, 237, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto',
+                    }}
+                  >
+                    <Upload size={24} color="var(--primary-600)" />
+                  </div>
+                  <p style={{ fontSize: 14, color: 'var(--text-main)', fontWeight: 600, marginBottom: 4 }}>
+                    የደረሰኝ ስክሪንሾት ይጫኑ / Upload your payment proof
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    PNG, JPG, WEBP or PDF · Max 10MB
+                  </p>
                 </div>
               )}
             </div>

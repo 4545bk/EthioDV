@@ -187,9 +187,9 @@ export default function LoginPage({ onNavigate }) {
         ወደ ዋና ገጽ / Back to Home
       </button>
 
-      <div className="card" style={{ padding: 32 }}>
+      <div className="card" style={{ padding: '36px 32px', borderRadius: 'var(--radius-lg)' }}>
         {/* Title */}
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ textAlign: 'center', marginBottom: 22 }}>
           <h2 style={{ fontSize: 24, marginBottom: 6 }}>
             {mode === 'signup' ? 'አዲስ መለያ ይፍጠሩ' : 'እንኳን ደህና መጡ'}
           </h2>
@@ -200,22 +200,24 @@ export default function LoginPage({ onNavigate }) {
           </p>
         </div>
 
-        {/* Tab Switcher: Sign In vs Sign Up */}
+        {/* Tab Switcher: Segmented Pill Control */}
         {mode !== 'otp' && (
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', marginBottom: 24 }}>
+          <div style={{ display: 'flex', background: 'var(--bg-input)', padding: 4, borderRadius: 'var(--radius-md)', marginBottom: 24, border: '1px solid var(--border-subtle)' }}>
             <button
               type="button"
               onClick={() => { setMode('signin'); setErrorMessage(''); setSuccessMessage(''); }}
               style={{
                 flex: 1,
-                padding: '10px 0',
-                background: 'none',
+                padding: '9px 0',
+                background: mode === 'signin' ? 'var(--bg-card)' : 'transparent',
                 border: 'none',
-                borderBottom: mode === 'signin' ? '2px solid var(--primary-500)' : '2px solid transparent',
-                color: mode === 'signin' ? '#ffffff' : 'var(--text-muted)',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: mode === 'signin' ? 'var(--shadow-sm)' : 'none',
+                color: mode === 'signin' ? 'var(--primary-600)' : 'var(--text-muted)',
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: 'pointer',
+                transition: 'all var(--transition-fast)',
               }}
             >
               ይግቡ / Sign In
@@ -225,14 +227,16 @@ export default function LoginPage({ onNavigate }) {
               onClick={() => { setMode('signup'); setErrorMessage(''); setSuccessMessage(''); }}
               style={{
                 flex: 1,
-                padding: '10px 0',
-                background: 'none',
+                padding: '9px 0',
+                background: mode === 'signup' ? 'var(--bg-card)' : 'transparent',
                 border: 'none',
-                borderBottom: mode === 'signup' ? '2px solid var(--primary-500)' : '2px solid transparent',
-                color: mode === 'signup' ? '#ffffff' : 'var(--text-muted)',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: mode === 'signup' ? 'var(--shadow-sm)' : 'none',
+                color: mode === 'signup' ? 'var(--primary-600)' : 'var(--text-muted)',
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: 'pointer',
+                transition: 'all var(--transition-fast)',
               }}
             >
               ይመዝገቡ / Sign Up
@@ -267,7 +271,7 @@ export default function LoginPage({ onNavigate }) {
 
             <div style={{ margin: '20px 0', textAlign: 'center', position: 'relative' }}>
               <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
-              <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg-main)', padding: '0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+              <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg-card)', padding: '0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
                 ወይም በይለፍ ቃል / OR
               </span>
             </div>
@@ -359,7 +363,7 @@ export default function LoginPage({ onNavigate }) {
 
             <div style={{ margin: '20px 0', textAlign: 'center', position: 'relative' }}>
               <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
-              <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg-main)', padding: '0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+              <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg-card)', padding: '0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
                 ወይም በኢሜይል / OR with Email
               </span>
             </div>

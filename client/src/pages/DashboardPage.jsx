@@ -65,8 +65,8 @@ export default function DashboardPage({ onNavigate }) {
             <div key={entry.id} className="card card-hover" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <strong style={{ fontSize: 16, color: '#ffffff' }}>{entry.applicantName}</strong>
-                  <span style={{ fontSize: 13, color: 'var(--primary-300)', fontFamily: 'monospace', fontWeight: 600 }}>
+                  <strong style={{ fontSize: 16, color: 'var(--text-main)', fontWeight: 700 }}>{entry.applicantName}</strong>
+                  <span style={{ fontSize: 13, color: 'var(--primary-600)', fontFamily: 'monospace', fontWeight: 600 }}>
                     #{entry.uniqueReference}
                   </span>
                   <QueueBadge status={entry.status} />
