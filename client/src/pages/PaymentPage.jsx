@@ -142,7 +142,7 @@ export default function PaymentPage({ onNavigate, entryId }) {
         <ArrowLeft size={14} /> ማመልከቻዎቼ / Back
       </button>
 
-      <div className="card" style={{ padding: '36px 30px', borderRadius: 'var(--radius-lg)' }}>
+      <div className="card payment-card" style={{ borderRadius: 'var(--radius-lg)' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <span className="badge badge-primary" style={{ marginBottom: 12, padding: '5px 14px', fontSize: 12 }}>
             ደረጃ 2: ክፍያ / Step 2: Payment
@@ -195,8 +195,8 @@ export default function PaymentPage({ onNavigate, entryId }) {
           </div>
           <a
             href="tel:0949478933"
-            className="btn btn-primary"
-            style={{ padding: '8px 18px', fontSize: 14, borderRadius: 9999, gap: 8, textDecoration: 'none' }}
+            className="btn btn-primary w-full-mobile"
+            style={{ padding: '8px 18px', fontSize: 14, borderRadius: 9999, gap: 8, textDecoration: 'none', justifyContent: 'center' }}
           >
             <Phone size={15} /> 0949478933
           </a>

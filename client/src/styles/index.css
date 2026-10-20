@@ -129,9 +129,70 @@ h1, h2, h3, h4, h5, h6 {
   gap: 20px;
 }
 
+/* ========================================================= */
+/* MOBILE RESPONSIVE OPTIMIZATIONS (Smartphones 320px - 768px) */
+/* ========================================================= */
 @media (max-width: 768px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  .main-content {
+    padding: 14px 0 40px 0;
+  }
+
   .grid-2, .grid-3 {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
+  }
+
+  /* Prevent iOS Safari 100% zoom-in jump on form inputs */
+  input, select, textarea, .form-input {
+    font-size: 16px !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .show-on-mobile {
+    display: flex !important;
   }
 }
+
+@media (min-width: 769px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
+
+  .show-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 10px;
+  }
+
+  .card {
+    padding: 18px 14px !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .btn {
+    padding: 10px 16px;
+    font-size: 13.5px;
+  }
+
+  .flex-col-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .w-full-mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+

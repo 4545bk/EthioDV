@@ -43,7 +43,7 @@ export default function DashboardPage({ onNavigate }) {
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>የDV-2027 ማመልከቻዎችዎን ሁኔታ እዚህ ይከታተሉ</p>
         </div>
 
-        <button onClick={handleCreateNew} className="btn btn-primary">
+        <button onClick={handleCreateNew} className="btn btn-primary w-full-mobile" style={{ justifyContent: 'center' }}>
           <PlusCircle size={16} />
           {t('newApplication')}
         </button>
@@ -95,12 +95,12 @@ export default function DashboardPage({ onNavigate }) {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }} className="w-full-mobile">
                 {entry.status === 'DRAFT' && (
                   <button
                     onClick={() => onNavigate('wizard', { entryId: entry.id })}
-                    className="btn btn-primary"
-                    style={{ fontSize: 13, padding: '8px 16px' }}
+                    className="btn btn-primary w-full-mobile"
+                    style={{ fontSize: 13, padding: '8px 16px', justifyContent: 'center' }}
                   >
                     ቅጹን ቀጥል / Continue
                   </button>
@@ -109,8 +109,8 @@ export default function DashboardPage({ onNavigate }) {
                 {entry.status === 'PAYMENT_PENDING' && (
                   <button
                     onClick={() => onNavigate('payment', { entryId: entry.id })}
-                    className="btn btn-accent"
-                    style={{ fontSize: 13, padding: '8px 16px' }}
+                    className="btn btn-accent w-full-mobile"
+                    style={{ fontSize: 13, padding: '8px 16px', justifyContent: 'center' }}
                   >
                     ክፍያ ፈጽም / Pay 1,000 ETB
                   </button>
@@ -119,8 +119,8 @@ export default function DashboardPage({ onNavigate }) {
                 {(entry.status === 'QUEUED' || entry.status === 'FILING_IN_PROGRESS') && (
                   <button
                     onClick={() => onNavigate('tracker', { entryId: entry.id })}
-                    className="btn btn-secondary"
-                    style={{ fontSize: 13, padding: '8px 16px' }}
+                    className="btn btn-secondary w-full-mobile"
+                    style={{ fontSize: 13, padding: '8px 16px', justifyContent: 'center' }}
                   >
                     <Clock size={14} />
                     {t('trackQueue')}
@@ -130,8 +130,8 @@ export default function DashboardPage({ onNavigate }) {
                 {entry.status === 'CONFIRMED' && (
                   <button
                     onClick={() => onNavigate('tracker', { entryId: entry.id })}
-                    className="btn btn-secondary"
-                    style={{ fontSize: 13, padding: '8px 16px', borderColor: 'var(--success)', color: 'var(--success)' }}
+                    className="btn btn-secondary w-full-mobile"
+                    style={{ fontSize: 13, padding: '8px 16px', borderColor: 'var(--success)', color: 'var(--success)', justifyContent: 'center' }}
                   >
                     <CheckCircle2 size={14} />
                     ይፋዊ ሰርተፊኬት / View Certificate

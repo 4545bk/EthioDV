@@ -11,20 +11,20 @@ export default function FaqPage({ onNavigate }) {
         <ArrowLeft size={14} /> {t('home')} / Back
       </button>
 
-      <div className="card" style={{ padding: 32, marginBottom: 30 }}>
+      <div className="card payment-card" style={{ marginBottom: 30, borderRadius: 'var(--radius-lg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <HelpCircle size={28} color="var(--primary-400)" />
           <h1 style={{ fontSize: 26, margin: 0 }}>ተደጋግመው የሚጠየቁ ጥያቄዎች (FAQ)</h1>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
-          ስለ DV-2027 ፕሮግራም፣ ስለ ቅጽ አሞላል እና ስለ [BRAND] አሰራር በተደጋጋሚ ለሚነሱ ጥያቄዎች የተሰጡ ይፋዊ ማብራሪያዎች።
+          ስለ DV-2027 ፕሮግራም፣ ስለ ቅጽ አሞላል እና ስለ EthioDV አሰራር በተደጋጋሚ ለሚነሱ ጥያቄዎች የተሰጡ ይፋዊ ማብራሪያዎች።
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="sub-card">
-            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>1. [BRAND] ምንድን ነው? ከአሜሪካ ኤምባሲ ጋር ግንኙነት አለው?</h3>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>1. EthioDV ምንድን ነው? ከአሜሪካ ኤምባሲ ጋር ግንኙነት አለው?</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              <strong>መልስ:</strong> በፍጹም! [BRAND] ራሱን የቻለ የቴክኖሎጂና የማመልከቻ አጋዥ አገልግሎት እንጂ ከአሜሪካ መንግስት፣ ከስቴት ዲፓርትመንት ወይም ከኤምባሲ ጋር ምንም አይነት ግንኙነት የለውም። ይፋዊው የዲቪ ሎተሪ ማመልከቻ በ <strong>dvprogram.state.gov</strong> በነፃ የሚሞላ ሲሆን የእኛ ክፍያ ዶላር ካርድ ለሌላቸው ኢትዮጵያውያን ቅጻቸውን በአማርኛ እንዲሞሉ፣ ፎቶግራፋቸውን በባለሙያ እንዲያስተካክሉ እና በይፋዊው ድረ-ገጽ እንዲመዘገቡ የሚደረግ የአገልግሎት ክፍያ ነው።
+              <strong>መልስ:</strong> በፍጹም! EthioDV ራሱን የቻለ የቴክኖሎጂና የማመልከቻ አጋዥ አገልግሎት እንጂ ከአሜሪካ መንግስት፣ ከስቴት ዲፓርትመንት ወይም ከኤምባሲ ጋር ምንም አይነት ግንኙነት የለውም። ይፋዊው የዲቪ ሎተሪ ማመልከቻ በ <strong>dvprogram.state.gov</strong> በነፃ የሚሞላ ሲሆን የእኛ ክፍያ ዶላር ካርድ ለሌላቸው ኢትዮጵያውያን ቅጻቸውን በአማርኛ እንዲሞሉ፣ ፎቶግራፋቸውን በባለሙያ እንዲያስተካክሉ እና በይፋዊው ድረ-ገጽ እንዲመዘገቡ የሚደረግ የአገልግሎት ክፍያ ነው።
             </p>
           </div>
 

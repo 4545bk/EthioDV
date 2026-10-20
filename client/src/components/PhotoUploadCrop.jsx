@@ -119,6 +119,26 @@ export default function PhotoUploadCrop({ onPhotoUploaded, existingPhotoKey, lab
 
   const handleMouseUp = () => setIsDragging(false);
 
+  // Mobile Touch Handlers
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches.length === 1) {
+      setIsDragging(true);
+      const touch = e.touches[0];
+      setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || !e.touches || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    setPan({
+      x: touch.clientX - dragStart.x,
+      y: touch.clientY - dragStart.y,
+    });
+  };
+
+  const handleTouchEnd = () => setIsDragging(false);
+
   // Generate 600x600 clean JPEG and upload directly to Cloudflare R2
   const handleCropAndUpload = async () => {
     if (!imageRef.current) return;
@@ -238,8 +258,9 @@ export default function PhotoUploadCrop({ onPhotoUploaded, existingPhotoKey, lab
           <div
             style={{
               position: 'relative',
-              width: 300,
-              height: 300,
+              width: 'min(300px, 78vw)',
+              height: 'min(300px, 78vw)',
+              maxWidth: '100%',
               margin: '0 auto 16px auto',
               borderRadius: 8,
               overflow: 'hidden',
@@ -247,11 +268,17 @@ export default function PhotoUploadCrop({ onPhotoUploaded, existingPhotoKey, lab
               border: '2px solid var(--border-subtle)',
               cursor: isDragging ? 'grabbing' : 'grab',
               touchAction: 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
             }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
           >
             <canvas
               ref={canvasRef}
@@ -310,7 +337,7 @@ export default function PhotoUploadCrop({ onPhotoUploaded, existingPhotoKey, lab
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={() => { setImageSrc(null); setUploadSuccess(false); }}

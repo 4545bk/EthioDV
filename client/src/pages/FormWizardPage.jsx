@@ -211,8 +211,8 @@ export default function FormWizardPage({ onNavigate, entryId }) {
         />
       )}
 
-      {/* Aspio Numbered Stepper Wizard Bar */}
-      <div className="card" style={{ padding: '18px 20px', marginBottom: 24, borderRadius: 'var(--radius-lg)' }}>
+      {/* Desktop Numbered Stepper Wizard Bar */}
+      <div className="card hide-on-mobile" style={{ padding: '18px 20px', marginBottom: 24, borderRadius: 'var(--radius-lg)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
           {[
             { step: 1, label: t('stepBio') },
@@ -221,7 +221,7 @@ export default function FormWizardPage({ onNavigate, entryId }) {
             { step: 4, label: t('stepEducation') },
             { step: 5, label: t('stepDerivatives') },
             { step: 6, label: t('stepReview') },
-          ].map((item, index) => {
+          ].map((item) => {
             const isActive = currentStep === item.step;
             const isCompleted = currentStep > item.step;
 
@@ -285,6 +285,82 @@ export default function FormWizardPage({ onNavigate, entryId }) {
             );
           })}
         </div>
+      </div>
+
+      {/* Mobile-Optimized Compact Stepper Bar */}
+      <div className="card show-on-mobile" style={{ flexDirection: 'column', padding: '14px 16px', marginBottom: 20, borderRadius: 'var(--radius-md)', gap: 10 }}>
+        {(() => {
+          const stepsList = [
+            { step: 1, label: t('stepBio') },
+            { step: 2, label: t('stepPhoto') },
+            { step: 3, label: t('stepAddress') },
+            { step: 4, label: t('stepEducation') },
+            { step: 5, label: t('stepDerivatives') },
+            { step: 6, label: t('stepReview') },
+          ];
+          const currentStepObj = stepsList.find((s) => s.step === currentStep) || stepsList[0];
+
+          return (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span className="badge badge-primary" style={{ fontSize: 11, padding: '3px 9px' }}>
+                  ደረጃ {currentStep} ከ 6
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)', maxWidth: '65%', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentStepObj.label}
+                </span>
+              </div>
+
+              {/* Progress track */}
+              <div style={{ width: '100%', height: 6, background: 'var(--bg-input)', borderRadius: 9999, overflow: 'hidden' }}>
+                <div
+                  style={{
+                    width: `${(currentStep / 6) * 100}%`,
+                    height: '100%',
+                    background: 'linear-gradient(90deg, var(--primary-600), var(--accent-500))',
+                    borderRadius: 9999,
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              </div>
+
+              {/* Tappable Step Pills for quick jumping */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 6, marginTop: 2 }}>
+                {stepsList.map((item) => {
+                  const isActive = currentStep === item.step;
+                  const isCompleted = currentStep > item.step;
+                  return (
+                    <button
+                      key={item.step}
+                      type="button"
+                      onClick={() => setCurrentStep(item.step)}
+                      style={{
+                        flex: 1,
+                        padding: '6px 0',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        background: isActive
+                          ? 'var(--primary-600)'
+                          : isCompleted
+                          ? 'var(--success)'
+                          : 'var(--bg-input)',
+                        color: isActive || isCompleted ? '#ffffff' : 'var(--text-muted)',
+                        boxShadow: isActive ? '0 2px 6px rgba(124, 58, 237, 0.4)' : 'none',
+                        transition: 'all 0.15s ease',
+                      }}
+                      title={item.label}
+                    >
+                      {isCompleted ? '✓' : item.step}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       {/* STEP 1: Biographical Information */}
@@ -1035,7 +1111,18 @@ export default function FormWizardPage({ onNavigate, entryId }) {
             onClick={handleSubmitForm}
             disabled={isSaving}
             className="btn btn-primary"
-            style={{ width: '100%', padding: '15px 0', fontSize: 16, fontWeight: 700, borderRadius: 12, boxShadow: '0 4px 18px rgba(124, 58, 237, 0.4)' }}
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              fontSize: 15,
+              fontWeight: 700,
+              borderRadius: 12,
+              boxShadow: '0 4px 18px rgba(124, 58, 237, 0.4)',
+              whiteSpace: 'normal',
+              height: 'auto',
+              lineHeight: 1.4,
+              textAlign: 'center',
+            }}
           >
             {isSaving ? 'በማስገባት ላይ...' : 'መረጃዎቼን አረጋግጫለሁ፤ ወደ ክፍያ ቀጥል (1,000 ETB) / Confirm Details & Proceed to Payment →'}
           </button>

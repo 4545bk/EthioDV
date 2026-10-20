@@ -139,8 +139,8 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
             ይህ ባለ 16 ዲጂት ቁጥር የእርስዎ የግል ንብረት ነው። ማመልከቻዎ በይፋዊው የአሜሪካ ድረ-ገጽ ላይ ገብቷል።
           </p>
 
-          <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 18, marginBottom: 20, display: 'inline-flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: 4, color: 'var(--primary-600)', fontFamily: 'monospace' }}>
+          <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: '14px 18px', marginBottom: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', maxWidth: '100%' }}>
+            <span style={{ fontSize: 'clamp(18px, 5.5vw, 28px)', fontWeight: 800, letterSpacing: 'clamp(1px, 1.2vw, 4px)', color: 'var(--primary-600)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
               {data.confirmationNumber}
             </span>
             <CopyButton text={data.confirmationNumber} label="Confirmation Number" />
@@ -151,16 +151,16 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
             ውጤቱ በሜይ ወር በ <strong>dvprogram.state.gov</strong> ላይ ይፋ ይሆናል። ውጤትዎን ለማየት ይህን የማረጋገጫ ቁጥር፣ የአያት ስምዎን እና የትውልድ ዓመትዎን ማስገባት አለብዎት።
           </div>
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button onClick={() => window.print()} className="btn btn-primary" style={{ fontSize: 13 }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => window.print()} className="btn btn-primary w-full-mobile" style={{ fontSize: 13, justifyContent: 'center' }}>
               <Download size={14} /> {t('downloadCertificate')}
             </button>
             <a
               href="https://dvprogram.state.gov"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-secondary"
-              style={{ fontSize: 13 }}
+              className="btn btn-secondary w-full-mobile"
+              style={{ fontSize: 13, justifyContent: 'center' }}
             >
               ይፋዊ ድረ-ገጽ <ExternalLink size={13} />
             </a>

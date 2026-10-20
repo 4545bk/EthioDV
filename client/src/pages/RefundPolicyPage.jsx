@@ -54,10 +54,10 @@ export default function RefundPolicyPage({ onNavigate, entryId }) {
         <ArrowLeft size={14} /> ተመለስ / Back
       </button>
 
-      <div className="card" style={{ padding: 32, marginBottom: 28 }}>
+      <div className="card payment-card" style={{ marginBottom: 28, borderRadius: 'var(--radius-lg)' }}>
         <h1 style={{ fontSize: 26, marginBottom: 12 }}>የገንዘብ ተመላሽ ደንብ / Refund Policy</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-          [BRAND] ግልጽና ፍትሃዊ የሆነ የገንዘብ ተመላሽ ፖሊሲ ይከተላል። ተጠቃሚዎች የከፈሉትን ገንዘብ በተመለከተ ያሉት ደንቦች ከዚህ በታች ተዘርዝረዋል:
+          EthioDV ግልጽና ፍትሃዊ የሆነ የገንዘብ ተመላሽ ፖሊሲ ይከተላል። ተጠቃሚዎች የከፈሉትን ገንዘብ በተመለከተ ያሉት ደንቦች ከዚህ በታች ተዘርዝረዋል:
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>

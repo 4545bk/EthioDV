@@ -46,38 +46,38 @@ export default function LandingPage({ onNavigate }) {
             {t('heroSubtitle')}
           </p>
 
-          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
+          <div className="hero-buttons" style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
             <button
               onClick={() => {
                 if (user) onNavigate('wizard');
                 else onNavigate('login');
               }}
-              className="btn btn-primary"
-              style={{ padding: '14px 28px', fontSize: 16 }}
+              className="btn btn-primary w-full-mobile"
+              style={{ padding: '14px 28px', fontSize: 16, justifyContent: 'center' }}
             >
               {t('heroCta')}
               <ArrowRight size={18} />
             </button>
             <button
               onClick={() => onNavigate('faq')}
-              className="btn btn-secondary"
-              style={{ padding: '14px 24px', fontSize: 15 }}
+              className="btn btn-secondary w-full-mobile"
+              style={{ padding: '14px 24px', fontSize: 15, justifyContent: 'center' }}
             >
               {t('faq')}
             </button>
           </div>
 
           {/* Quick Track Input */}
-          <form onSubmit={handleQuickTrack} className="card" style={{ maxWidth: 480, margin: '0 auto', padding: 12, display: 'flex', gap: 8 }}>
+          <form onSubmit={handleQuickTrack} className="card" style={{ maxWidth: 480, margin: '0 auto', padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input
               type="text"
               placeholder="የማመልከቻ መለያ (e.g. DV27-XXXXXX)"
               value={trackRef}
               onChange={(e) => setTrackRef(e.target.value)}
               className="form-input"
-              style={{ textTransform: 'uppercase', fontSize: 13 }}
+              style={{ textTransform: 'uppercase', fontSize: 14, flex: 1, minWidth: 180 }}
             />
-            <button type="submit" className="btn btn-accent" style={{ padding: '8px 18px' }}>
+            <button type="submit" className="btn btn-accent w-full-mobile" style={{ padding: '10px 18px', justifyContent: 'center' }}>
               <Search size={15} />
               {t('trackQueue')}
             </button>
@@ -152,11 +152,11 @@ export default function LandingPage({ onNavigate }) {
               </p>
             </div>
 
-            <div style={{ flexShrink: 0 }}>
+            <div style={{ flexShrink: 0 }} className="w-full-mobile">
               <button
                 onClick={() => onNavigate('refund')}
-                className="btn btn-secondary"
-                style={{ padding: '8px 16px', fontSize: 13, borderRadius: 9999, borderColor: 'rgba(16, 185, 129, 0.4)' }}
+                className="btn btn-secondary w-full-mobile"
+                style={{ padding: '8px 16px', fontSize: 13, borderRadius: 9999, borderColor: 'rgba(16, 185, 129, 0.4)', justifyContent: 'center' }}
               >
                 ደንቡን ይመልከቱ / Details →
               </button>

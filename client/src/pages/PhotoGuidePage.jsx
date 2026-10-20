@@ -18,7 +18,7 @@ export default function PhotoGuidePage({ onNavigate }) {
       </button>
 
       {/* Main Header Card */}
-      <div className="card" style={{ padding: '36px 30px', marginBottom: 24, borderRadius: 'var(--radius-lg)' }}>
+      <div className="card payment-card" style={{ marginBottom: 24, borderRadius: 'var(--radius-lg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div
             style={{
@@ -129,8 +129,8 @@ export default function PhotoGuidePage({ onNavigate }) {
         <div style={{ textAlign: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: 24 }}>
           <button
             onClick={() => onNavigate('wizard')}
-            className="btn btn-primary"
-            style={{ padding: '14px 32px', fontSize: 15, borderRadius: 9999 }}
+            className="btn btn-primary w-full-mobile"
+            style={{ padding: '14px 32px', fontSize: 15, borderRadius: 9999, justifyContent: 'center' }}
           >
             አሁን ማመልከት ጀምር / Start Application <ArrowRight size={16} />
           </button>

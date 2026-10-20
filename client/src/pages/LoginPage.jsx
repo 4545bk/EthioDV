@@ -178,7 +178,7 @@ export default function LoginPage({ onNavigate }) {
   };
 
   return (
-    <div className="container" style={{ maxWidth: 440, padding: '40px 20px' }}>
+    <div className="container" style={{ maxWidth: 440, padding: '24px 14px' }}>
       <button
         onClick={() => onNavigate('home')}
         className="btn btn-secondary"
@@ -188,7 +188,7 @@ export default function LoginPage({ onNavigate }) {
         ወደ ዋና ገጽ / Back to Home
       </button>
 
-      <div className="card" style={{ padding: '36px 32px', borderRadius: 'var(--radius-lg)' }}>
+      <div className="card payment-card" style={{ borderRadius: 'var(--radius-lg)' }}>
         {/* Title */}
         <div style={{ textAlign: 'center', marginBottom: 22 }}>
           <h2 style={{ fontSize: 24, marginBottom: 6 }}>
