@@ -13,6 +13,7 @@ import refundsRoutes from './routes/refunds.js';
 import adminRoutes from './routes/admin.js';
 import webhooksRoutes from './routes/webhooks.js';
 import settingsRoutes from './routes/settings.js';
+import { connectDB } from './config/db.js';
 
 const app = express();
 
@@ -32,7 +33,7 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health Check
+// Health Check (always responds instantly, even before DB is ready)
 app.get(['/api/health', '/api/v1/health'], (req, res) => {
   res.json({
     status: 'ok',
@@ -40,6 +41,17 @@ app.get(['/api/health', '/api/v1/health'], (req, res) => {
     timestamp: new Date().toISOString(),
     environment: ENV.NODE_ENV,
   });
+});
+
+// Database connection middleware for serverless invocations
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Serverless DB connection error:', err.message);
+    next(err);
+  }
 });
 
 // Mount Routes

@@ -45,31 +45,25 @@ async function seedDefaultAccounts() {
   }
 }
 
-// Serverless handler export (in case invoked as a serverless function)
-const serverlessHandler = async (req, res) => {
-  try {
-    await connectDB();
-  } catch (err) {
-    console.error('Failed database connection in serverless handler:', err.message);
-  }
-  return app(req, res);
-};
-
-// Always listen on designated port (Vercel Services, Render, or Local)
-const port = process.env.PORT || ENV.PORT || 5000;
-connectDB()
-  .then(async () => {
-    await seedDefaultAccounts();
-    app.listen(port, () => {
-      console.log(`🚀 EthioDV-FillTrack API Server listening on port ${port}`);
+// Standalone server for local development or traditional hosting
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || ENV.PORT || 5000;
+  connectDB()
+    .then(async () => {
+      await seedDefaultAccounts();
+      app.listen(port, () => {
+        console.log(`🚀 EthioDV-FillTrack API Server listening on port ${port}`);
+      });
+    })
+    .catch((err) => {
+      console.error('Could not connect to database on startup:', err.message);
+      app.listen(port, () => {
+        console.log(`⚠️ API Server listening on port ${port} (Waiting for MongoDB connection...)`);
+      });
     });
-  })
-  .catch((err) => {
-    console.error('Could not connect to database on startup:', err.message);
-    app.listen(port, () => {
-      console.log(`⚠️ API Server listening on port ${port} (Waiting for MongoDB connection...)`);
-    });
-  });
+}
 
-export default serverlessHandler;
+// Export Express app directly for Vercel / serverless runtime
+export default app;
+
 
