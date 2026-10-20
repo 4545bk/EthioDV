@@ -1,14 +1,24 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { authenticateToken } from '../middleware/auth.js';
 import { getPresignedUploadUrl, getStorageProvider, uploadBufferToCloudinary } from '../services/storage.js';
 
 const router = express.Router();
-const MOCK_UPLOAD_DIR = path.join(process.cwd(), 'uploads_mock');
 
-if (!fs.existsSync(MOCK_UPLOAD_DIR)) {
-  fs.mkdirSync(MOCK_UPLOAD_DIR, { recursive: true });
+// On Vercel / serverless runtime, process.cwd() is read-only (/var/task). Use os.tmpdir() (/tmp) when serverless.
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const MOCK_UPLOAD_DIR = isServerless
+  ? path.join(os.tmpdir(), 'uploads_mock')
+  : path.join(process.cwd(), 'uploads_mock');
+
+try {
+  if (!fs.existsSync(MOCK_UPLOAD_DIR)) {
+    fs.mkdirSync(MOCK_UPLOAD_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.warn('[Uploads] Could not initialize local mock directory (safe to ignore if using cloud storage):', err.message);
 }
 
 /**
@@ -64,6 +74,9 @@ router.put('/direct', express.raw({ type: '*/*', limit: '10mb' }), async (req, r
     // Local disk mock fallback
     const safeFilename = encodeURIComponent(String(fileKey)).replace(/%/g, '_');
     const targetPath = path.join(MOCK_UPLOAD_DIR, safeFilename);
+    if (!fs.existsSync(MOCK_UPLOAD_DIR)) {
+      fs.mkdirSync(MOCK_UPLOAD_DIR, { recursive: true });
+    }
     fs.writeFileSync(targetPath, req.body);
     return res.status(200).send('Local upload successful');
   } catch (err) {
@@ -83,6 +96,9 @@ router.put('/local-mock', express.raw({ type: '*/*', limit: '10mb' }), (req, res
   const safeFilename = encodeURIComponent(String(fileKey)).replace(/%/g, '_');
   const targetPath = path.join(MOCK_UPLOAD_DIR, safeFilename);
 
+  if (!fs.existsSync(MOCK_UPLOAD_DIR)) {
+    fs.mkdirSync(MOCK_UPLOAD_DIR, { recursive: true });
+  }
   fs.writeFileSync(targetPath, req.body);
   return res.status(200).send('Mock upload successful');
 });
