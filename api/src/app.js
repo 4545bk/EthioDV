@@ -34,7 +34,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health Check (always responds instantly, even before DB is ready)
-app.get(['/api/health', '/api/v1/health'], (req, res) => {
+app.get(['/health', '/api/health', '/v1/health', '/api/v1/health'], (req, res) => {
   res.json({
     status: 'ok',
     service: 'EthioDV-FillTrack API',
