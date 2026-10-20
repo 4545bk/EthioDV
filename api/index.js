@@ -45,24 +45,26 @@ async function seedDefaultAccounts() {
   }
 }
 
-// Always start HTTP server on allocated port (Vercel Services, Render, or Local)
-const port = process.env.PORT || ENV.PORT || 5000;
-connectDB()
-  .then(async () => {
-    await seedDefaultAccounts();
-    app.listen(port, () => {
-      console.log(`🚀 EthioDV-FillTrack API Server listening on port ${port}`);
+// Standalone HTTP server: only start listening when NOT running in Vercel Serverless
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || ENV.PORT || 5000;
+  connectDB()
+    .then(async () => {
+      await seedDefaultAccounts();
+      app.listen(port, () => {
+        console.log(`🚀 EthioDV-FillTrack API Server listening on port ${port}`);
+      });
+    })
+    .catch((err) => {
+      console.error('Could not connect to database on startup:', err.message);
+      app.listen(port, () => {
+        console.log(`⚠️ API Server listening on port ${port} (Waiting for MongoDB connection...)`);
+      });
     });
-  })
-  .catch((err) => {
-    console.error('Could not connect to database on startup:', err.message);
-    app.listen(port, () => {
-      console.log(`⚠️ API Server listening on port ${port} (Waiting for MongoDB connection...)`);
-    });
-  });
-
+}
 
 // Export Express app directly for Vercel / serverless runtime
 export default app;
+
 
 

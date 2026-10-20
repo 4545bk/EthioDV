@@ -54,16 +54,22 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Mount Routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/uploads', uploadsRoutes);
-app.use('/api/v1/entries', entriesRoutes);
-app.use('/api/v1/payments', paymentsRoutes);
-app.use('/api/v1/queue', queueRoutes);
-app.use('/api/v1/refunds', refundsRoutes);
-app.use('/api/v1/admin', adminRoutes);
-app.use('/api/v1/webhooks', webhooksRoutes);
-app.use('/api/v1/settings', settingsRoutes);
+// Mount Routes with dual prefixes to support both direct and rewritten proxy requests
+const mountAppRoutes = (prefix = '') => {
+  app.use(`${prefix}/auth`, authRoutes);
+  app.use(`${prefix}/uploads`, uploadsRoutes);
+  app.use(`${prefix}/entries`, entriesRoutes);
+  app.use(`${prefix}/payments`, paymentsRoutes);
+  app.use(`${prefix}/queue`, queueRoutes);
+  app.use(`${prefix}/refunds`, refundsRoutes);
+  app.use(`${prefix}/admin`, adminRoutes);
+  app.use(`${prefix}/webhooks`, webhooksRoutes);
+  app.use(`${prefix}/settings`, settingsRoutes);
+};
+
+mountAppRoutes('/api/v1');
+mountAppRoutes('/v1');
+
 
 // Error Handling
 app.use(errorHandler);
