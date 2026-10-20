@@ -2,7 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest } from '../services/api.js';
 import PhotoUploadCrop from '../components/PhotoUploadCrop.jsx';
-import { ArrowLeft, ArrowRight, Save, CheckCircle, AlertCircle, Plus, Trash2, Camera, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, CheckCircle, AlertCircle, Plus, Trash2, Camera, ExternalLink, Edit3, User, MapPin, GraduationCap, Users, ShieldCheck, Check } from 'lucide-react';
+
+const EDUCATION_LABELS = {
+  HIGH_SCHOOL_DEGREE: 'የሁለተኛ ደረጃ ትምህርት ያጠናቀቀ (12ኛ ክፍል) / High School Degree',
+  VOCATIONAL_SCHOOL: 'የሙያ ትምህርት / Vocational School (TVET)',
+  SOME_UNIVERSITY: 'የዩኒቨርሲቲ ተማሪ / Some University Courses',
+  UNIVERSITY_DEGREE: 'የመጀመሪያ ዲግሪ / University Degree',
+  MASTERS_DEGREE: "ማስተርስ ዲግሪ / Master's Degree",
+  DOCTORATE_DEGREE: 'ዶክትሬት / Doctorate Degree',
+  HIGH_SCHOOL_NO_DEGREE: '12ኛ ክፍል ያላጠናቀቀ / High School, No Degree',
+  PRIMARY_ONLY: 'የመጀመሪያ ደረጃ ብቻ / Primary School Only',
+};
+
+const MARITAL_LABELS = {
+  UNMARRIED: 'ያላገባ / ያላገባች (Unmarried)',
+  MARRIED_NON_US_CITIZEN: 'ያገባ / ያገባች (ባለቤቴ አሜሪካዊ ዜጋ አይደለችም/አይደለም) / Married',
+  MARRIED_US_CITIZEN: 'ያገባ / ያገባች (ባለቤቴ አሜሪካዊ ዜጋ ነው/ናት) / Married (US Citizen)',
+  DIVORCED: 'የፈታ / የፈታች (Divorced)',
+  WIDOWED: 'የትዳር አጋር የሞተበት/ባት (Widowed)',
+  LEGALLY_SEPARATED: 'በፍርድ ቤት የተለየ (Legally Separated)',
+};
 
 export default function FormWizardPage({ onNavigate, entryId }) {
   const { t } = useLanguage();
@@ -701,55 +721,318 @@ export default function FormWizardPage({ onNavigate, entryId }) {
 
       {/* STEP 6: Review & Final Submit */}
       {currentStep === 6 && (
-        <div className="card animate-fade-in">
-          <h3 style={{ fontSize: 18, marginBottom: 18, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 10 }}>
-            ክፍል 6: ማጠቃለያና ማረጋገጫ / Review & Final Confirmation
-          </h3>
+        <div className="card animate-fade-in" style={{ padding: '28px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 20, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 14 }}>
+            <div>
+              <h3 style={{ fontSize: 20, margin: '0 0 6px 0', color: 'var(--text-main)', fontWeight: 800 }}>
+                ክፍል 6: ማጠቃለያና ማረጋገጫ / Review & Final Confirmation
+              </h3>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
+                እባክዎ ወደ ክፍያ ከመቀጠልዎ በፊት ያስገቧቸውን መረጃዎች በጥንቃቄ ያረጋግጡ። ማናቸውንም መረጃ ለማስተካከል <strong>"አርትዕ / Edit"</strong> የሚለውን ይጫኑ።
+              </p>
+            </div>
+            <span className="badge badge-success" style={{ padding: '6px 14px' }}>
+              ደረጃ 6 ከ 6 (የመጨረሻ ማረጋገጫ)
+            </span>
+          </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: 18, borderRadius: 8, marginBottom: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, fontSize: 13 }}>
+          {/* SECTION 1: Primary Entrant Identity */}
+          <div className="sub-card" style={{ marginBottom: 18, border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 8 }}>
+              <strong style={{ fontSize: 14, color: 'var(--primary-600)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <User size={16} /> ክፍል 1: መሰረታዊ መረጃ / Part 1: Primary Entrant Information
+              </strong>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className="btn btn-secondary"
+                style={{ padding: '4px 10px', fontSize: 12, borderRadius: 9999, gap: 4 }}
+              >
+                <Edit3 size={12} /> አርትዕ / Edit
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, fontSize: 13 }}>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>ሙሉ ስም:</span>
-                <p style={{ fontWeight: 600 }}>{primary.name.firstName} {primary.name.middleName} {primary.name.lastName}</p>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የአያት ስም (Last / Family Name):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.name.lastName || '—'}</strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>ጾታና ልደት:</span>
-                <p style={{ fontWeight: 600 }}>{primary.gender === 'M' ? 'ወንድ' : 'ሴት'} | {primary.birthDate.day}/{primary.birthDate.month}/{primary.birthDate.year}</p>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የራስ ስም (First Name):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.name.firstName || '—'}</strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>የትውልድ ከተማ:</span>
-                <p style={{ fontWeight: 600 }}>{primary.birthCity || 'N/A'}</p>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የአባት ስም (Middle Name):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {primary.name.hasNoMiddleName ? 'የአባት ስም የለኝም (No Middle Name)' : (primary.name.middleName || '—')}
+                </strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>ትምህርት:</span>
-                <p style={{ fontWeight: 600 }}>{primary.educationLevel}</p>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ጾታ (Gender):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {primary.gender === 'M' ? 'ወንድ (Male)' : 'ሴት (Female)'}
+                </strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>ጋብቻና ልጆች:</span>
-                <p style={{ fontWeight: 600 }}>{primary.maritalStatus} | {primary.childrenCount} ልጆች</p>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የትውልድ ቀን (Date of Birth):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {primary.birthDate.day}/{primary.birthDate.month}/{primary.birthDate.year} (Day/Month/Year)
+                </strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>ፎቶግራፍ:</span>
-                <p style={{ fontWeight: 600, color: primary.photoKey ? '#10b981' : '#ef4444' }}>
-                  {primary.photoKey ? '✓ ተያይዟል (Verified)' : '✗ አልተያያዘም'}
-                </p>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የትውልድ ከተማ (Birth City):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {primary.isBirthCityUnknown ? 'አይታወቅም (Unknown)' : (primary.birthCity || '—')}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የትውልድ ሀገር (Birth Country):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.birthCountry || 'Ethiopia'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ብቁ የሚያደርግ ሀገር (Eligibility):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {primary.isClaimingAlternateChargeability
+                    ? `${primary.eligibilityCountry} (Alternate Chargeability)`
+                    : (primary.eligibilityCountry || primary.birthCountry || 'Ethiopia')}
+                </strong>
               </div>
             </div>
           </div>
 
-          <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: 16, borderRadius: 8, marginBottom: 24, fontSize: 13, lineHeight: 1.5 }}>
-            <strong>የአመልካች ቃል መግቢያ / Applicant Declaration:</strong><br />
+          {/* SECTION 2: Entrant Photograph */}
+          <div className="sub-card" style={{ marginBottom: 18, border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 8 }}>
+              <strong style={{ fontSize: 14, color: 'var(--primary-600)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Camera size={16} /> ክፍል 2: ፎቶግራፍ / Part 2: Entrant Photograph
+              </strong>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                className="btn btn-secondary"
+                style={{ padding: '4px 10px', fontSize: 12, borderRadius: 9999, gap: 4 }}
+              >
+                <Edit3 size={12} /> አርትዕ / Edit
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              {primary.photoKey ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(16, 185, 129, 0.1)', padding: '10px 16px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <Check size={18} color="#10b981" />
+                  <div>
+                    <strong style={{ color: '#10b981', fontSize: 13 }}>የዋናው አመልካች ፎቶ ተያይዟል (Photo Attached)</strong>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>ባለ 600x600 ፒክሰል የስቴት ዲፓርትመንት መስፈርት ያሟላ</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(239, 68, 68, 0.1)', padding: '10px 16px', borderRadius: 8, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                  <AlertCircle size={18} color="#ef4444" />
+                  <div>
+                    <strong style={{ color: '#ef4444', fontSize: 13 }}>ፎቶግራፍ አልተያያዘም (Photo Missing)</strong>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>እባክዎ ወደ ክፍል 2 ተመልሰው ፎቶዎን ያያይዙ</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SECTION 3: Mailing Address & Contact */}
+          <div className="sub-card" style={{ marginBottom: 18, border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 8 }}>
+              <strong style={{ fontSize: 14, color: 'var(--primary-600)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <MapPin size={16} /> ክፍል 3: አድራሻና የመገናኛ መረጃ / Part 3: Mailing Address & Contact
+              </strong>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                className="btn btn-secondary"
+                style={{ padding: '4px 10px', fontSize: 12, borderRadius: 9999, gap: 4 }}
+              >
+                <Edit3 size={12} /> አርትዕ / Edit
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, fontSize: 13 }}>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የመኖሪያ አድራሻ (Address Line 1):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.mailingAddress.addressLine1 || '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ተጨማሪ አድራሻ (Address Line 2):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.mailingAddress.addressLine2 || 'የለም (None)'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ከተማ (City/Town):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.mailingAddress.city || '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ክፍለ ከተማ / ዞን (District/Province):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.mailingAddress.districtProvince || 'የለም (None)'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የፖስታ ቁጥር (Postal Code):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {primary.mailingAddress.hasNoPostalCode ? 'የፖስታ ቁጥር የለም (No Postal Code)' : (primary.mailingAddress.postalCode || '—')}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ሀገር (Country):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.mailingAddress.country || 'Ethiopia'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ስልክ ቁጥር (Phone Number):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.phone || 'የለም (None)'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>ኢሜይል አድራሻ (Email Address):</span>
+                <strong style={{ color: 'var(--text-main)' }}>{primary.email || '—'}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 4: Education & Marital Status */}
+          <div className="sub-card" style={{ marginBottom: 18, border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 8 }}>
+              <strong style={{ fontSize: 14, color: 'var(--primary-600)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <GraduationCap size={16} /> ክፍል 4: ትምህርትና ጋብቻ / Part 4: Education & Marital Status
+              </strong>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(4)}
+                className="btn btn-secondary"
+                style={{ padding: '4px 10px', fontSize: 12, borderRadius: 9999, gap: 4 }}
+              >
+                <Edit3 size={12} /> አርትዕ / Edit
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, fontSize: 13 }}>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የትምህርት ደረጃ (Education Level):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {EDUCATION_LABELS[primary.educationLevel] || primary.educationLevel}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የጋብቻ ሁኔታ (Marital Status):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {MARITAL_LABELS[primary.maritalStatus] || primary.maritalStatus}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>የልጆች ብዛት (Children Count):</span>
+                <strong style={{ color: 'var(--text-main)' }}>
+                  {primary.childrenCount || 0} ልጅ/ልጆች
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 5: Derivatives (Spouse & Children) */}
+          <div className="sub-card" style={{ marginBottom: 20, border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 8 }}>
+              <strong style={{ fontSize: 14, color: 'var(--primary-600)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Users size={16} /> ክፍል 5: የቤተሰብ መረጃ (የትዳር አጋርና ልጆች) / Part 5: Derivatives
+              </strong>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(5)}
+                className="btn btn-secondary"
+                style={{ padding: '4px 10px', fontSize: 12, borderRadius: 9999, gap: 4 }}
+              >
+                <Edit3 size={12} /> አርትዕ / Edit
+              </button>
+            </div>
+
+            {primary.maritalStatus === 'MARRIED_NON_US_CITIZEN' ? (
+              <div style={{ background: 'var(--bg-input)', padding: 14, borderRadius: 8, marginBottom: 12 }}>
+                <strong style={{ display: 'block', fontSize: 13, color: '#38bdf8', marginBottom: 8 }}>
+                  የባለቤት መረጃ (Spouse Details):
+                </strong>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, fontSize: 12 }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>ሙሉ ስም:</span>
+                    <strong>{spouse.name.firstName} {spouse.name.middleName} {spouse.name.lastName}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>ጾታና ልደት:</span>
+                    <strong>{spouse.gender === 'M' ? 'ወንድ' : 'ሴት'} | {spouse.birthDate.day}/{spouse.birthDate.month}/{spouse.birthDate.year}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>የትውልድ ቦታ:</span>
+                    <strong>{spouse.birthCity || 'N/A'}, {spouse.birthCountry}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>ፎቶ:</span>
+                    <strong style={{ color: spouse.photoKey ? '#10b981' : '#ef4444' }}>
+                      {spouse.photoKey ? '✓ ተያይዟል' : '⚠️ አልተያያዘም'}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {children.length > 0 ? (
+              <div style={{ background: 'var(--bg-input)', padding: 14, borderRadius: 8 }}>
+                <strong style={{ display: 'block', fontSize: 13, color: 'var(--accent-400)', marginBottom: 8 }}>
+                  የልጆች ዝርዝር ({children.length} ልጆች የተመዘገቡ):
+                </strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {children.map((child, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, fontSize: 12, padding: '8px 10px', background: 'var(--bg-card)', borderRadius: 6 }}>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>ልጅ {i + 1}: </span>
+                        <strong>{child.name.firstName} {child.name.middleName} {child.name.lastName}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>ጾታ/ልደት: </span>
+                        <strong>{child.gender === 'M' ? 'ወንድ' : 'ሴት'} | {child.birthDate.day}/{child.birthDate.month}/{child.birthDate.year}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>ፎቶ: </span>
+                        <strong style={{ color: child.photoKey ? '#10b981' : '#ef4444' }}>
+                          {child.photoKey ? '✓ ተያይዟል' : '⚠️ አልተያያዘም'}
+                        </strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {primary.maritalStatus !== 'MARRIED_NON_US_CITIZEN' && children.length === 0 && (
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>
+                ምንም ተጨማሪ የቤተሰብ አባላት አልተካተቱም (Single Entrant / No derivatives).
+              </p>
+            )}
+          </div>
+
+          {/* 90% Money-Back Guarantee Trust Box */}
+          <div className="info-box" style={{ marginBottom: 20, borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.08)' }}>
+            <strong style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: 14, marginBottom: 4 }}>
+              <ShieldCheck size={18} /> የ 90% የተመላሽ ገንዘብ ዋስትና (90% Money-Back Guarantee)
+            </strong>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: 'var(--text-main)' }}>
+              ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎ በጊዜ ገደቡ ሳይገባ ቢቀር፣ የከፈሉት ገንዘብ <strong>90% (900 ብር)</strong> ሙሉ በሙሉ ወዲያውኑ ይመለስልዎታል።
+            </p>
+          </div>
+
+          {/* Applicant Declaration */}
+          <div style={{ background: 'rgba(124, 58, 237, 0.08)', border: '1px solid rgba(124, 58, 237, 0.25)', padding: 16, borderRadius: 8, marginBottom: 24, fontSize: 13, lineHeight: 1.5 }}>
+            <strong style={{ color: 'var(--primary-600)' }}>✍️ የአመልካች ቃል መግቢያ / Applicant Declaration:</strong><br />
             በዚህ ቅጽ ላይ ያስገባኋቸው መረጃዎች በሙሉ ትክክለኛና እውነተኛ መሆናቸውን አረጋግጣለሁ። የሀሰት መረጃ ወይም ያልተሟላ የቤተሰብ ዝርዝር ማስገባት በስቴት ዲፓርትመንት ህግ መሰረት ከሎተሪው እንደሚያስወግድ ተረድቻለሁ።
           </div>
 
+          {/* Big Action Submit Button */}
           <button
             type="button"
             onClick={handleSubmitForm}
             disabled={isSaving}
             className="btn btn-primary"
-            style={{ width: '100%', padding: '14px 0', fontSize: 16 }}
+            style={{ width: '100%', padding: '15px 0', fontSize: 16, fontWeight: 700, borderRadius: 12, boxShadow: '0 4px 18px rgba(124, 58, 237, 0.4)' }}
           >
-            {isSaving ? 'በማስገባት ላይ...' : t('submitForm')}
+            {isSaving ? 'በማስገባት ላይ...' : 'መረጃዎቼን አረጋግጫለሁ፤ ወደ ክፍያ ቀጥል (1,000 ETB) / Confirm Details & Proceed to Payment →'}
           </button>
         </div>
       )}
