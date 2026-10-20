@@ -55,6 +55,13 @@ export default function FaqPage({ onNavigate }) {
               <strong>መልስ:</strong> የDV-2027 ውጤት በሜይ ወር በ <strong>dvprogram.state.gov</strong> ላይ በይፋ ይፋ ይሆናል። የተሰጠዎትን የማረጋገጫ ቁጥር በመጠቀም በግልዎ ውጤትዎን ማየት ይችላሉ።
             </p>
           </div>
+
+          <div className="sub-card" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.05)' }}>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>6. የገንዘብ ተመላሽ ዋስትናው (90% Refund Guarantee) እንዴት ይሰራል?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <strong>መልስ:</strong> ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎ በጊዜ ገደቡ ማስገባት ካልቻልን፣ የከፈሉት ገንዘብ <strong>90% (900 ብር)</strong> ሙሉ በሙሉ ወዲያውኑ ወደ አካውንትዎ ተመላሽ ይደረጋል (10% የባንክና ቴሌኮም ሂደት ወጪ ብቻ ተቀንሶ)።
+            </p>
+          </div>
         </div>
       </div>
     </div>

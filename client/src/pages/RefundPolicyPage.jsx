@@ -62,9 +62,9 @@ export default function RefundPolicyPage({ onNavigate, entryId }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
           <div style={{ background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981', padding: 16, borderRadius: 6 }}>
-            <strong style={{ color: '#10b981', fontSize: 15 }}>1. 100% ሙሉ ተመላሽ (Full Refund)</strong>
+            <strong style={{ color: '#10b981', fontSize: 15 }}>1. 90% የተመላሽ ገንዘብ ዋስትና (90% Money-Back Guarantee)</strong>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: 1.5 }}>
-              የኛ የባለሙያ ቡድን የቴክኒክ ችግር አጋጥሞት ወይም የስቴት ዲፓርትመንት ፖርታል ተዘግቶ ማመልከቻዎን በጊዜ ገደቡ ማስገባት ካልቻለ የከፈሉት 1,000 ብር ሙሉ በሙሉ ተመላሽ ይደረጋል።
+              ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎን በጊዜ ገደቡ ማስገባት ካልቻልን፣ የከፈሉት ገንዘብ <strong>90% (900 ብር)</strong> ሙሉ በሙሉ ተመላሽ ይደረግልዎታል (10% የባንክና ቴሌኮም ሂደት ወጪ ብቻ ተቀንሶ)።
             </p>
           </div>
 

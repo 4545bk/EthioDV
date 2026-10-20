@@ -16,15 +16,15 @@ const SettingsSchema = new mongoose.Schema(
       default: 1000,
     },
     telebirr: {
-      phone: { type: String, default: '0911234567' },
+      phone: { type: String, default: '0949478933' },
       name: { type: String, default: 'EthioDV-FillTrack Service' },
     },
     cbe: {
-      accountNumber: { type: String, default: '1000123456789' },
+      accountNumber: { type: String, default: '1000301164328' },
       accountName: { type: String, default: 'EthioDV-FillTrack Service' },
     },
     cbeBirr: {
-      phone: { type: String, default: '0911234567' },
+      phone: { type: String, default: '0949478933' },
       name: { type: String, default: 'EthioDV-FillTrack Service' },
     },
     intakeEnabled: {
@@ -58,7 +58,27 @@ const SettingsSchema = new mongoose.Schema(
 SettingsSchema.statics.getGlobal = async function () {
   let settings = await this.findOne({ key: 'global_config' });
   if (!settings) {
-    settings = await this.create({ key: 'global_config' });
+    settings = await this.create({
+      key: 'global_config',
+      telebirr: { phone: '0949478933', name: 'EthioDV-FillTrack Service' },
+      cbe: { accountNumber: '1000301164328', accountName: 'EthioDV-FillTrack Service' },
+    });
+  } else {
+    // Automatically migrate placeholder demo accounts to user's real accounts
+    let updated = false;
+    if (!settings.cbe?.accountNumber || settings.cbe.accountNumber === '1000123456789') {
+      if (!settings.cbe) settings.cbe = {};
+      settings.cbe.accountNumber = '1000301164328';
+      updated = true;
+    }
+    if (!settings.telebirr?.phone || settings.telebirr.phone === '0911234567') {
+      if (!settings.telebirr) settings.telebirr = {};
+      settings.telebirr.phone = '0949478933';
+      updated = true;
+    }
+    if (updated) {
+      await settings.save();
+    }
   }
   return settings;
 };

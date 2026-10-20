@@ -194,10 +194,10 @@ export default function PaymentPage({ onNavigate, entryId }) {
             <div>
               <strong style={{ color: 'var(--text-main)', fontSize: 14 }}>ቴሌብር (Telebirr):</strong>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                {settings?.telebirr?.phone || '0911234567'} ({settings?.telebirr?.name || 'DV Ethiopia'})
+                {settings?.telebirr?.phone || '0949478933'} ({settings?.telebirr?.name || 'EthioDV Service'})
               </div>
             </div>
-            <CopyButton text={settings?.telebirr?.phone || '0911234567'} label="Telebirr Phone" />
+            <CopyButton text={settings?.telebirr?.phone || '0949478933'} label="Telebirr Phone" />
           </div>
 
           {/* CBE Details */}
@@ -205,17 +205,24 @@ export default function PaymentPage({ onNavigate, entryId }) {
             <div>
               <strong style={{ color: 'var(--text-main)', fontSize: 14 }}>የኢትዮጵያ ንግድ ባንክ (CBE):</strong>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                {settings?.cbe?.accountNumber || '1000123456789'} ({settings?.cbe?.accountName || 'DV Ethiopia'})
+                {settings?.cbe?.accountNumber || '1000301164328'} ({settings?.cbe?.accountName || 'EthioDV Service'})
               </div>
             </div>
-            <CopyButton text={settings?.cbe?.accountNumber || '1000123456789'} label="CBE Account" />
+            <CopyButton text={settings?.cbe?.accountNumber || '1000301164328'} label="CBE Account" />
           </div>
         </div>
 
-        {/* Aspio Notice Policy Card */}
-        <div className="notice-box" style={{ marginBottom: 24 }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>⚠️ አስፈላጊ ማሳሰቢያ / Important Policy:</strong>
-          ክፍያው ፎርምዎን በስቴት ዲፓርትመንት መስፈርት መሰረት ለማዘጋጀትና ለመሙላት የሚከፈል የአገልግሎት ክፍያ ነው። ክፍያውን ከፈጸሙ በኋላ የተረጋገጠውን ደረሰኝ ከዚህ በታች ያያይዙ።
+        {/* 90% Money-Back Guarantee Policy Box */}
+        <div className="info-box" style={{ marginBottom: 24, borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.08)' }}>
+          <strong style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: 14, marginBottom: 6 }}>
+            🛡️ የ 90% ተመላሽ ዋስትና / 90% Money-Back Guarantee
+          </strong>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: 'var(--text-main)' }}>
+            ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎን በጊዜ ገደቡ ማስገባት ካልቻልን፣ የከፈሉት ገንዘብ <strong>90% (900 ብር)</strong> ሙሉ በሙሉ ወዲያውኑ ወደ አካውንትዎ ይመለሳል (10% የባንክና ቴሌኮም ሂደት ወጪ ብቻ ተቀንሶ)።
+          </p>
+          <p style={{ margin: '6px 0 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+            (If anything unforeseen or technical happens from our side preventing filing, 90% of your payment is guaranteed to be returned to you immediately.)
+          </p>
         </div>
 
         {errorMessage && (

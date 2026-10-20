@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { apiRequest } from '../services/api.js';
-import { Shield, CheckCircle2, Clock, Smartphone, ArrowRight, HelpCircle, AlertCircle, Search } from 'lucide-react';
+import { Shield, ShieldCheck, CheckCircle2, Clock, Smartphone, ArrowRight, HelpCircle, AlertCircle, Search } from 'lucide-react';
 
 export default function LandingPage({ onNavigate }) {
   const { t } = useLanguage();
@@ -85,6 +85,86 @@ export default function LandingPage({ onNavigate }) {
         </div>
       </section>
 
+      {/* 90% Money-Back Guarantee Section (Prominent, High-Trust Visual Placement) */}
+      <section style={{ padding: '10px 0 30px 0' }}>
+        <div className="container" style={{ maxWidth: 840 }}>
+          <div
+            className="card animate-fade-in"
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.09), rgba(124, 58, 237, 0.06))',
+              border: '2px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '28px 24px',
+              boxShadow: '0 8px 30px rgba(16, 185, 129, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                flexShrink: 0,
+                boxShadow: '0 4px 18px rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              <ShieldCheck size={32} />
+            </div>
+
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.2)',
+                    color: '#10b981',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 9999,
+                    letterSpacing: 0.5,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  🛡️ ይፋዊ የዋስትና ደንብ / Official Guarantee
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>• 100% የታመነ</span>
+              </div>
+
+              <h3 style={{ fontSize: 20, margin: '4px 0 8px 0', color: 'var(--text-main)', fontWeight: 800 }}>
+                የ 90% የተመላሽ ገንዘብ ዋስትና (90% Money-Back Guarantee)
+              </h3>
+
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--text-muted)' }}>
+                ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎ በጊዜ ገደቡ ሳይገባ ቢቀር፣ 
+                የከፈሉት ገንዘብ <strong style={{ color: 'var(--text-main)' }}>90% (900 ብር) ሙሉ በሙሉ ተመላሽ</strong> ይደረግልዎታል 
+                (10% የባንክና ቴሌኮም ሂደት ወጪ ብቻ ተቀንሶ)።
+              </p>
+              <p style={{ margin: '6px 0 0 0', fontSize: 12, color: 'var(--primary-600)', fontWeight: 600 }}>
+                ✓ Peace of mind guaranteed: 90% of your funds returned immediately if anything happens from our side.
+              </p>
+            </div>
+
+            <div style={{ flexShrink: 0 }}>
+              <button
+                onClick={() => onNavigate('refund')}
+                className="btn btn-secondary"
+                style={{ padding: '8px 16px', fontSize: 13, borderRadius: 9999, borderColor: 'rgba(16, 185, 129, 0.4)' }}
+              >
+                ደንቡን ይመልከቱ / Details →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing & Transparency Card */}
       <section style={{ padding: '20px 0 50px 0' }}>
         <div className="container" style={{ maxWidth: 760 }}>
@@ -113,6 +193,10 @@ export default function LandingPage({ onNavigate }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                 <CheckCircle2 size={16} color="#10b981" />
                 <span>ይፋዊ ባለ 16 ዲጂት ማረጋገጫ ቁጥር</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, gridColumn: '1 / -1', background: 'rgba(16, 185, 129, 0.08)', padding: '8px 12px', borderRadius: 8 }}>
+                <ShieldCheck size={16} color="#10b981" />
+                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>የ 90% የተመላሽ ገንዘብ ዋስትና (90% Money-Back Guarantee)</span>
               </div>
             </div>
 
@@ -193,9 +277,9 @@ export default function LandingPage({ onNavigate }) {
             </div>
 
             <div className="card" style={{ padding: 20, borderRadius: 'var(--radius-md)' }}>
-              <h4 style={{ fontSize: 15, marginBottom: 6, color: 'var(--text-main)', fontWeight: 700 }}>ገንዘቤ ተመላሽ የሚደረገው በምን ሁኔታ ነው?</h4>
+              <h4 style={{ fontSize: 15, marginBottom: 6, color: 'var(--text-main)', fontWeight: 700 }}>ገንዘቤ ተመላሽ የሚደረገው በምን ሁኔታ ነው? (Refund Guarantee)</h4>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                ቡድናችን ማመልከቻዎን በጊዜ ገደቡ ውስጥ ማስገባት ካልቻለ 100% ሙሉ ክፍያዎ ይመለሳል። ክፍያዎ ፀድቆ ወደ አሜሪካ ድረ-ገጽ ከመግባቱ በፊት ማመልከቻዎን ማቋረጥ ከፈለጉ 50% ተመላሽ ይደረጋል። ማመልከቻው ከገባ ግን ተመላሽ አይደረግም።
+                ከእኛ በኩል በሚፈጠር ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎን በጊዜ ገደቡ ማስገባት ካልቻልን፣ የከፈሉት ገንዘብ <strong>90% (900 ብር)</strong> ሙሉ በሙሉ ተመላሽ ይደረግልዎታል (10% የባንክና ቴሌኮም ሂደት ወጪ ብቻ ተቀንሶ)። ክፍያዎ ፀድቆ ወደ አሜሪካ ድረ-ገጽ ከመግባቱ በፊት በግል ፍላጎትዎ ማቋረጥ ከፈለጉ 50% ተመላሽ ይደረጋል። ይፋዊው የማረጋገጫ ቁጥር (Confirmation Number) ከተሰጠ በኋላ ግን አገልግሎቱ ስለተጠናቀቀ ተመላሽ አይደረግም።
               </p>
             </div>
           </div>
