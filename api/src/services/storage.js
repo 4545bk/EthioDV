@@ -62,7 +62,7 @@ export async function getPresignedUploadUrl(category, mimeType = 'image/jpeg') {
 
   // Mode B: Cloudinary or Local Mock (client PUTs binary to backend /direct endpoint)
   return {
-    uploadUrl: `${ENV.APP_URL}/api/v1/uploads/direct?key=${encodeURIComponent(fileKey)}`,
+    uploadUrl: `/api/v1/uploads/direct?key=${encodeURIComponent(fileKey)}`,
     fileKey,
     isLocalMock: provider === 'local_mock',
     provider,
@@ -133,5 +133,5 @@ export async function getPresignedDownloadUrl(fileKey) {
   }
 
   // Mode C: Local Mock Disk
-  return `${ENV.APP_URL}/api/v1/uploads/local-mock?key=${encodeURIComponent(fileKey)}`;
+  return `/api/v1/uploads/local-mock?key=${encodeURIComponent(fileKey)}`;
 }

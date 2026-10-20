@@ -20,16 +20,42 @@ import AdminDashboardPage from './pages/AdminDashboardPage.jsx';
 import PhotoGuidePage from './pages/PhotoGuidePage.jsx';
 
 
+function getInitialPage() {
+  const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+  if (path === 'photo-tool' || path === 'photo-guide' || path === 'photo') return 'photo-guide';
+  if (path === 'login') return 'login';
+  if (path === 'dashboard') return 'dashboard';
+  if (path === 'faq') return 'faq';
+  if (path === 'refund') return 'refund';
+  if (path === 'operator') return 'operator';
+  if (path === 'admin') return 'admin';
+  if (path === 'wizard') return 'wizard';
+  if (path === 'tracker') return 'tracker';
+  return 'home';
+}
+
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [pageParams, setPageParams] = useState({});
 
   const navigateTo = (page, params = {}) => {
     setCurrentPage(page);
     setPageParams(params);
+    const targetPath = page === 'home' ? '/' : `/${page === 'photo-guide' ? 'photo-tool' : page}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPage(getInitialPage());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Route protection
   useEffect(() => {

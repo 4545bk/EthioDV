@@ -41,17 +41,24 @@ export async function uploadFileDirect(category, file) {
 
   const { uploadUrl, fileKey } = presignRes.data;
 
-  // 2. Stream binary file directly to S3 / R2
+  // 2. Stream binary file directly to S3 / R2 or backend
+  const token = localStorage.getItem('dv_jwt');
+  const headers = {
+    'Content-Type': file.type || 'image/jpeg',
+  };
+  if (token && uploadUrl.startsWith('/api')) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const uploadResponse = await fetch(uploadUrl, {
     method: 'PUT',
-    headers: {
-      'Content-Type': file.type || 'image/jpeg',
-    },
+    headers,
     body: file,
   });
 
   if (!uploadResponse.ok) {
-    throw new Error('Failed to upload file to secure cloud storage');
+    const errorText = await uploadResponse.text().catch(() => '');
+    throw new Error(errorText || `Upload failed with status ${uploadResponse.status}`);
   }
 
   return fileKey;
