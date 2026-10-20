@@ -2,7 +2,13 @@ import express from 'express';
 import Payment from '../models/Payment.js';
 import Entry from '../models/Entry.js';
 import User from '../models/User.js';
-import { answerTelegramCallbackQuery, sendTelegramUserMessage } from '../services/telegram.js';
+import FormData from '../models/FormData.js';
+import {
+  answerTelegramCallbackQuery,
+  sendTelegramUserMessage,
+  notifyAdminDepositApproved,
+  notifyAdminDepositRejected,
+} from '../services/telegram.js';
 import { ENV } from '../config/env.js';
 
 const router = express.Router();
@@ -57,6 +63,27 @@ router.post('/telegram', async (req, res) => {
           }
 
           await answerTelegramCallbackQuery(cb.id, `✅ Approved by ${actorName}`, false);
+
+          // Post to Telegram Admin Channel
+          try {
+            const formData = await FormData.findOne({ entryId: payment.entryId });
+            const applicantName = formData?.primary?.name
+              ? `${formData.primary.name.firstName || ''} ${formData.primary.name.lastName || ''}`.trim()
+              : (user?.fullName || user?.name || 'Applicant');
+            const queuePosition = await Entry.countDocuments({ status: 'QUEUED' });
+
+            await notifyAdminDepositApproved({
+              entryRef: entry?.uniqueReference || 'N/A',
+              applicantName,
+              amountETB: (payment.amountETBCents || 100000) / 100,
+              provider: payment.provider,
+              txCode: payment.claimedTransactionCode,
+              adminName: actorName,
+              queuePosition,
+            });
+          } catch (tgErr) {
+            console.warn('Webhook telegram approve notify error:', tgErr.message);
+          }
         } else {
           payment.status = 'REJECTED';
           payment.rejectionReason = 'Rejected via Telegram inline button';
@@ -68,6 +95,26 @@ router.post('/telegram', async (req, res) => {
           }
 
           await answerTelegramCallbackQuery(cb.id, `❌ Rejected by ${actorName}`, false);
+
+          // Post to Telegram Admin Channel
+          try {
+            const formData = await FormData.findOne({ entryId: payment.entryId });
+            const applicantName = formData?.primary?.name
+              ? `${formData.primary.name.firstName || ''} ${formData.primary.name.lastName || ''}`.trim()
+              : (user?.fullName || user?.name || 'Applicant');
+
+            await notifyAdminDepositRejected({
+              entryRef: entry?.uniqueReference || 'N/A',
+              applicantName,
+              amountETB: (payment.amountETBCents || 100000) / 100,
+              provider: payment.provider,
+              txCode: payment.claimedTransactionCode,
+              reason: payment.rejectionReason,
+              adminName: actorName,
+            });
+          } catch (tgErr) {
+            console.warn('Webhook telegram reject notify error:', tgErr.message);
+          }
         }
       }
       return res.status(200).send('OK');

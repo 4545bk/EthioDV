@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest, uploadFileDirect } from '../services/api.js';
 import CopyButton from '../components/CopyButton.jsx';
+import Alert from '../components/Alert.jsx';
 import { Shield, Clock, ExternalLink, Download, CheckCircle, AlertTriangle, RefreshCw, Upload } from 'lucide-react';
 
 export default function OperatorStationPage({ onNavigate }) {
@@ -157,15 +158,19 @@ export default function OperatorStationPage({ onNavigate }) {
       </div>
 
       {statusMessage && (
-        <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: 12, borderRadius: 8, fontSize: 14, marginBottom: 18 }}>
-          {statusMessage}
-        </div>
+        <Alert
+          type="success"
+          message={statusMessage}
+          onClose={() => setStatusMessage('')}
+        />
       )}
 
       {errorMessage && (
-        <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: 12, borderRadius: 8, fontSize: 14, marginBottom: 18 }}>
-          {errorMessage}
-        </div>
+        <Alert
+          type="danger"
+          message={errorMessage}
+          onClose={() => setErrorMessage('')}
+        />
       )}
 
       {!activeData ? (

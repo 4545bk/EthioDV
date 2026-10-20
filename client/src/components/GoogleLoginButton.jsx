@@ -86,7 +86,9 @@ export default function GoogleLoginButton({ onSuccess, onError, text = 'continue
 
   const handleFallbackClick = () => {
     if (!clientId) {
-      alert('Google Sign-In setup: To enable 1-click Google authentication, please add VITE_GOOGLE_CLIENT_ID to your client/.env file.');
+      if (onError) {
+        onError('Google Sign-In setup: To enable 1-click Google authentication, please add VITE_GOOGLE_CLIENT_ID to client environment configuration.');
+      }
     }
   };
 

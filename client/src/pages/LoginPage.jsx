@@ -3,6 +3,7 @@ import { useLanguage } from '../i18n/index.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { apiRequest } from '../services/api.js';
 import GoogleLoginButton from '../components/GoogleLoginButton.jsx';
+import Alert from '../components/Alert.jsx';
 import { Mail, Lock, User, Send, Shield, AlertCircle, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function LoginPage({ onNavigate }) {
@@ -246,17 +247,19 @@ export default function LoginPage({ onNavigate }) {
 
         {/* Feedback Alerts */}
         {errorMessage && (
-          <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={16} style={{ flexShrink: 0 }} />
-            <span>{errorMessage}</span>
-          </div>
+          <Alert
+            type="danger"
+            message={errorMessage}
+            onClose={() => setErrorMessage('')}
+          />
         )}
 
         {successMessage && (
-          <div style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
-            <span>{successMessage}</span>
-          </div>
+          <Alert
+            type="success"
+            message={successMessage}
+            onClose={() => setSuccessMessage('')}
+          />
         )}
 
         {/* ================= MODE 1: SIGN IN ================= */}

@@ -2,30 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest } from '../services/api.js';
 import QueueBadge from '../components/QueueBadge.jsx';
+import Alert from '../components/Alert.jsx';
 import { PlusCircle, FileText, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
 
 export default function DashboardPage({ onNavigate }) {
   const { t } = useLanguage();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     apiRequest('/entries')
       .then((res) => {
         if (res.success) setEntries(res.data);
       })
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err);
+        setErrorMessage(err.message || 'Could not load entries.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const handleCreateNew = async () => {
     try {
+      setErrorMessage('');
       const res = await apiRequest('/entries', { method: 'POST' });
       if (res.success) {
         onNavigate('wizard', { entryId: res.data.entry.id });
       }
     } catch (err) {
-      alert(err.message || 'Could not initialize application');
+      setErrorMessage(err.message || 'Could not initialize application');
     }
   };
 
@@ -42,6 +48,14 @@ export default function DashboardPage({ onNavigate }) {
           {t('newApplication')}
         </button>
       </div>
+
+      {errorMessage && (
+        <Alert
+          type="danger"
+          message={errorMessage}
+          onClose={() => setErrorMessage('')}
+        />
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>

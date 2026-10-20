@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest } from '../services/api.js';
 import PhotoUploadCrop from '../components/PhotoUploadCrop.jsx';
+import Alert from '../components/Alert.jsx';
 import { ArrowLeft, ArrowRight, Save, CheckCircle, AlertCircle, Plus, Trash2, Camera, ExternalLink, Edit3, User, MapPin, GraduationCap, Users, ShieldCheck, Check } from 'lucide-react';
 
 const EDUCATION_LABELS = {
@@ -195,15 +196,19 @@ export default function FormWizardPage({ onNavigate, entryId }) {
       </div>
 
       {saveMessage && (
-        <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: 10, borderRadius: 6, fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <CheckCircle size={15} /> {saveMessage}
-        </div>
+        <Alert
+          type="success"
+          message={saveMessage}
+          onClose={() => setSaveMessage('')}
+        />
       )}
 
       {errorMessage && (
-        <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: 12, borderRadius: 6, fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <AlertCircle size={16} /> {errorMessage}
-        </div>
+        <Alert
+          type="danger"
+          message={errorMessage}
+          onClose={() => setErrorMessage('')}
+        />
       )}
 
       {/* Aspio Numbered Stepper Wizard Bar */}

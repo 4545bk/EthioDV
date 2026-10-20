@@ -10,7 +10,14 @@ import Staff from '../models/Staff.js';
 import AuditLog from '../models/AuditLog.js';
 import Settings from '../models/Settings.js';
 import { getPresignedDownloadUrl } from '../services/r2.js';
-import { sendTelegramUserMessage, sendTelegramAdminAlert, sendDailyExecutiveReport } from '../services/telegram.js';
+import {
+  sendTelegramUserMessage,
+  sendTelegramAdminAlert,
+  sendDailyExecutiveReport,
+  notifyAdminDepositApproved,
+  notifyAdminDepositRejected,
+  notifyAdminEntryFiled,
+} from '../services/telegram.js';
 import { sendConfirmationEmail } from '../services/email.js';
 
 const router = express.Router();
@@ -306,6 +313,19 @@ router.post('/entries/:entryId/file', async (req, res, next) => {
       });
     }
 
+    // Post to Telegram Admin Channel
+    try {
+      const operatorName = req.user?.fullName || req.user?.name || req.user?.email || 'Operator';
+      await notifyAdminEntryFiled({
+        entryRef: entry.uniqueReference,
+        applicantName,
+        confirmationNumber: cleanNum,
+        operatorName,
+      });
+    } catch (tgErr) {
+      console.warn('Telegram channel post error (entry filed):', tgErr.message);
+    }
+
     return res.json({
       success: true,
       data: {
@@ -395,13 +415,35 @@ router.post('/payments/:paymentId/approve', requireSuperAdmin, async (req, res, 
       metadata: { entryRef: entry?.uniqueReference, amount: payment.amountETBCents },
     });
 
-    // Notify user
+    // Notify user directly if linked to bot
     const user = await User.findById(payment.userId);
     if (user?.telegramChatId) {
       await sendTelegramUserMessage(
         user.telegramChatId,
         `✅ ክፍያዎ ተረጋግጧል! ማመልከቻዎ (#${entry?.uniqueReference}) በቅደም ተከተል ተመዝግቧል።`
       );
+    }
+
+    // Post to Telegram Admin Channel (Live operational audit)
+    try {
+      const formData = await FormData.findOne({ entryId: payment.entryId });
+      const applicantName = formData?.primary?.name
+        ? `${formData.primary.name.firstName || ''} ${formData.primary.name.lastName || ''}`.trim()
+        : (user?.fullName || user?.name || 'Applicant');
+      const adminName = req.user?.fullName || req.user?.name || req.user?.email || 'Super Admin';
+      const queuePosition = await Entry.countDocuments({ status: 'QUEUED' });
+
+      await notifyAdminDepositApproved({
+        entryRef: entry?.uniqueReference || 'N/A',
+        applicantName,
+        amountETB: (payment.amountETBCents || 100000) / 100,
+        provider: payment.provider,
+        txCode: payment.claimedTransactionCode,
+        adminName,
+        queuePosition,
+      });
+    } catch (tgErr) {
+      console.warn('Telegram channel post error (deposit approve):', tgErr.message);
     }
 
     return res.json({ success: true, data: { message: 'Payment approved. Entry placed in queue.' } });
@@ -445,6 +487,27 @@ router.post('/payments/:paymentId/reject', requireSuperAdmin, async (req, res, n
         user.telegramChatId,
         `❌ የክፍያ ማረጋገጫዎ ውድቅ ተደርጓል (#${entry?.uniqueReference}): ${payment.rejectionReason}። እባክዎ ትክክለኛውን ደረሰኝ በድጋሚ ይላኩ።`
       );
+    }
+
+    // Post to Telegram Admin Channel (Live operational audit)
+    try {
+      const formData = await FormData.findOne({ entryId: payment.entryId });
+      const applicantName = formData?.primary?.name
+        ? `${formData.primary.name.firstName || ''} ${formData.primary.name.lastName || ''}`.trim()
+        : (user?.fullName || user?.name || 'Applicant');
+      const adminName = req.user?.fullName || req.user?.name || req.user?.email || 'Super Admin';
+
+      await notifyAdminDepositRejected({
+        entryRef: entry?.uniqueReference || 'N/A',
+        applicantName,
+        amountETB: (payment.amountETBCents || 100000) / 100,
+        provider: payment.provider,
+        txCode: payment.claimedTransactionCode,
+        reason: payment.rejectionReason,
+        adminName,
+      });
+    } catch (tgErr) {
+      console.warn('Telegram channel post error (deposit reject):', tgErr.message);
     }
 
     return res.json({ success: true, data: { message: 'Payment rejected.' } });

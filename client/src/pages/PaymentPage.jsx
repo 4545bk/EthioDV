@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest, uploadFileDirect } from '../services/api.js';
 import CopyButton from '../components/CopyButton.jsx';
+import Alert from '../components/Alert.jsx';
 import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall } from 'lucide-react';
 
 export default function PaymentPage({ onNavigate, entryId }) {
@@ -250,15 +251,18 @@ export default function PaymentPage({ onNavigate, entryId }) {
         </div>
 
         {errorMessage && (
-          <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: 12, borderRadius: 'var(--radius-sm)', fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={16} /> {errorMessage}
-          </div>
+          <Alert
+            type="danger"
+            message={errorMessage}
+            onClose={() => setErrorMessage('')}
+          />
         )}
 
         {successMessage && (
-          <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: 12, borderRadius: 'var(--radius-sm)', fontSize: 13, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CheckCircle2 size={16} /> {successMessage}
-          </div>
+          <Alert
+            type="success"
+            message={successMessage}
+          />
         )}
 
         {/* Payment Submission Form */}

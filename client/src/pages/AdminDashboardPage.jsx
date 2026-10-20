@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../services/api.js';
-import { Shield, DollarSign, Users, CheckCircle, XCircle, TrendingUp, Key, ExternalLink, Send, Sparkles, AlertTriangle } from 'lucide-react';
+import Alert from '../components/Alert.jsx';
+import { Shield, DollarSign, Users, CheckCircle, XCircle, TrendingUp, Key, ExternalLink, Send, Sparkles, AlertTriangle, X } from 'lucide-react';
 
 export default function AdminDashboardPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('payments'); // 'payments' | 'analytics' | 'audit' | '2fa'
@@ -11,6 +12,11 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSendingReport, setIsSendingReport] = useState(false);
+
+  // Rejection Modal State
+  const [rejectModalPayment, setRejectModalPayment] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [isRejecting, setIsRejecting] = useState(false);
 
   // 2FA Setup State
   const [qrCode, setQrCode] = useState('');
@@ -75,7 +81,7 @@ export default function AdminDashboardPage({ onNavigate }) {
       setErrorMessage('');
       const res = await apiRequest(`/admin/payments/${paymentId}/approve`, { method: 'POST' });
       if (res.success) {
-        setMessage('Payment approved and placed in queue!');
+        setMessage('Payment approved and placed in queue! Telegram channel has been notified.');
         fetchPayments();
         fetchAnalytics();
       }
@@ -84,23 +90,35 @@ export default function AdminDashboardPage({ onNavigate }) {
     }
   };
 
-  // Reject Payment
-  const handleReject = async (paymentId) => {
-    const reason = prompt('Please enter rejection reason (will be sent to applicant):', 'Payment could not be verified on bank statement');
-    if (!reason) return;
+  // Open Rejection Dialog
+  const openRejectModal = (payment) => {
+    setRejectModalPayment(payment);
+    setRejectReason('Payment could not be verified on bank statement / ደረሰኙ በባንክ ስቴትመንት ላይ አልተገኘም');
+  };
+
+  // Submit Rejection
+  const handleConfirmReject = async () => {
+    if (!rejectModalPayment) return;
+    const trimmedReason = rejectReason.trim() || 'Payment could not be verified on bank statement';
 
     try {
+      setIsRejecting(true);
       setErrorMessage('');
-      const res = await apiRequest(`/admin/payments/${paymentId}/reject`, {
+      const res = await apiRequest(`/admin/payments/${rejectModalPayment.id}/reject`, {
         method: 'POST',
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({ reason: trimmedReason }),
       });
       if (res.success) {
-        setMessage('Payment rejected.');
+        setMessage(`Payment for #${rejectModalPayment.entryRef || ''} rejected. Telegram channel has been notified.`);
+        setRejectModalPayment(null);
+        setRejectReason('');
         fetchPayments();
+        fetchAnalytics();
       }
     } catch (err) {
-      setErrorMessage(err.message);
+      setErrorMessage(err.message || 'Failed to reject payment');
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -161,15 +179,19 @@ export default function AdminDashboardPage({ onNavigate }) {
       </div>
 
       {message && (
-        <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 18 }}>
-          {message}
-        </div>
+        <Alert
+          type="success"
+          message={message}
+          onClose={() => setMessage('')}
+        />
       )}
 
       {errorMessage && (
-        <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 18 }}>
-          {errorMessage}
-        </div>
+        <Alert
+          type="danger"
+          message={errorMessage}
+          onClose={() => setErrorMessage('')}
+        />
       )}
 
       {/* Tabs */}
@@ -270,7 +292,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                       <CheckCircle size={14} /> Approve
                     </button>
                     <button
-                      onClick={() => handleReject(p.id)}
+                      onClick={() => openRejectModal(p)}
                       className="btn btn-danger"
                       style={{ fontSize: 12, padding: '7px 14px' }}
                     >
@@ -407,6 +429,125 @@ export default function AdminDashboardPage({ onNavigate }) {
               </form>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Rejection Reason Modal */}
+      {rejectModalPayment && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isRejecting) setRejectModalPayment(null);
+          }}
+        >
+          <div
+            className="card animate-fade-in"
+            style={{
+              maxWidth: 520,
+              width: '100%',
+              padding: '28px 24px',
+              borderRadius: 'var(--radius-lg)',
+              border: '1.5px solid rgba(239, 68, 68, 0.35)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+                  <XCircle size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 18, margin: 0, color: 'var(--text-main)', fontWeight: 700 }}>
+                    Reject Deposit / ክፍያውን ውድቅ አድርግ
+                  </h3>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    Ref: #{rejectModalPayment.entryRef || 'N/A'} • {rejectModalPayment.amountETB} ETB
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !isRejecting && setRejectModalPayment(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
+              እባክዎ ክፍያው ውድቅ የተደረገበትን ምክንያት ይምረጡ ወይም ይፃፉ። ምክንያቱ ለአመልካቹ እና ለቴሌግራም ቻናል ይላካል።
+            </p>
+
+            {/* Quick Preset Reason Chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+              {[
+                'ደረሰኙ በባንክ ስቴትመንት ላይ አልተገኘም (Unverified)',
+                'ደረሰኙ በግልጽ አይነበብም (Blurry/Unreadable)',
+                'የትራንዛክሽን ቁጥሩ የተሳሳተ ነው (Invalid Txn Code)',
+                'አስቀድሞ በሌላ አመልካች የተመዘገበ ኮድ (Duplicate claim)',
+              ].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setRejectReason(preset)}
+                  className="btn btn-secondary"
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: 11,
+                    borderRadius: 9999,
+                    borderColor: rejectReason === preset ? 'var(--danger)' : undefined,
+                    color: rejectReason === preset ? 'var(--danger)' : undefined,
+                  }}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label">ምክንያት / Rejection Reason *</label>
+              <textarea
+                rows={3}
+                required
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Enter rejection reason..."
+                className="form-input"
+                style={{ resize: 'vertical', fontSize: 13 }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                disabled={isRejecting}
+                onClick={() => setRejectModalPayment(null)}
+                className="btn btn-secondary"
+                style={{ padding: '8px 18px', fontSize: 13 }}
+              >
+                Cancel / ተመለስ
+              </button>
+              <button
+                type="button"
+                disabled={isRejecting || !rejectReason.trim()}
+                onClick={handleConfirmReject}
+                className="btn btn-danger"
+                style={{ padding: '8px 20px', fontSize: 13 }}
+              >
+                {isRejecting ? 'Rejecting...' : 'Confirm Rejection (ውድቅ አድርግ)'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

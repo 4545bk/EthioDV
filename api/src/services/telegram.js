@@ -156,3 +156,113 @@ export async function sendDailyExecutiveReport(stats) {
 
   return await sendTelegramAdminAlert(text);
 }
+
+/**
+ * Format and post an approved deposit notification to the Telegram channel
+ */
+export async function notifyAdminDepositApproved({
+  entryRef = 'N/A',
+  applicantName = 'Applicant',
+  amountETB = 1000,
+  provider = 'TELEBIRR',
+  txCode = 'N/A',
+  adminName = 'Super Admin',
+  queuePosition = null,
+}) {
+  const nowStr = new Date().toLocaleString('en-US', {
+    timeZone: 'Africa/Addis_Ababa',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const positionLine = queuePosition ? `\n📋 <b>Queue Position:</b> #${queuePosition}` : '';
+
+  const text = `
+✅ <b>DEPOSIT APPROVED / የተፈቀደ ክፍያ</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 <b>Applicant:</b> ${applicantName}
+📋 <b>Ref:</b> <code>#${entryRef}</code>
+💰 <b>Amount:</b> <b>${Number(amountETB).toLocaleString()} ETB</b>
+🏦 <b>Provider:</b> ${provider}
+🔢 <b>Transaction ID:</b> <code>${txCode || 'N/A'}</code>
+👨‍💼 <b>Approved By:</b> ${adminName}${positionLine}
+⏳ <b>Status:</b> Moved to Operator Filing Queue
+⏰ <b>Time:</b> <i>${nowStr} EAT</i>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ <i>EthioDV-FillTrack Automated Notification</i>
+  `.trim();
+
+  return await sendTelegramAdminAlert(text);
+}
+
+/**
+ * Format and post a rejected deposit notification to the Telegram channel
+ */
+export async function notifyAdminDepositRejected({
+  entryRef = 'N/A',
+  applicantName = 'Applicant',
+  amountETB = 1000,
+  provider = 'TELEBIRR',
+  txCode = 'N/A',
+  reason = 'Unverified payment',
+  adminName = 'Super Admin',
+}) {
+  const nowStr = new Date().toLocaleString('en-US', {
+    timeZone: 'Africa/Addis_Ababa',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const text = `
+❌ <b>DEPOSIT REJECTED / ውድቅ የተደረገ ክፍያ</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 <b>Applicant:</b> ${applicantName}
+📋 <b>Ref:</b> <code>#${entryRef}</code>
+💰 <b>Amount:</b> <b>${Number(amountETB).toLocaleString()} ETB</b>
+🏦 <b>Provider:</b> ${provider}
+🔢 <b>Transaction ID:</b> <code>${txCode || 'N/A'}</code>
+⚠️ <b>Rejection Reason:</b> ${reason}
+👨‍💼 <b>Action By:</b> ${adminName}
+⏰ <b>Time:</b> <i>${nowStr} EAT</i>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ <i>EthioDV-FillTrack Automated Notification</i>
+  `.trim();
+
+  return await sendTelegramAdminAlert(text);
+}
+
+/**
+ * Format and post an official filing confirmation to the Telegram channel
+ */
+export async function notifyAdminEntryFiled({
+  entryRef = 'N/A',
+  applicantName = 'Applicant',
+  confirmationNumber = 'N/A',
+  operatorName = 'Operator',
+}) {
+  const nowStr = new Date().toLocaleString('en-US', {
+    timeZone: 'Africa/Addis_Ababa',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const text = `
+🎉 <b>OFFICIAL APPLICATION FILED / ማመልከቻው ተልኳል</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 <b>Applicant:</b> ${applicantName}
+📋 <b>Ref:</b> <code>#${entryRef}</code>
+🎫 <b>Confirmation #:</b> <code>${confirmationNumber}</code>
+👨‍💼 <b>Filed By:</b> ${operatorName}
+⏰ <b>Time:</b> <i>${nowStr} EAT</i>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+👑 <i>EthioDV-FillTrack Official Submission Complete</i>
+  `.trim();
+
+  return await sendTelegramAdminAlert(text);
+}

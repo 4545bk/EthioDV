@@ -295,3 +295,122 @@
   color: #ffffff;
   border-color: var(--success);
 }
+
+/* ========================================================= */
+/* UNIFIED PROFESSIONAL ALERTS (Aspio Glassmorphic Alerts)  */
+/* ========================================================= */
+.app-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.05);
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.app-alert-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.app-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-alert-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 3px;
+  letter-spacing: -0.01em;
+}
+
+.app-alert-message {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.95;
+  word-break: break-word;
+}
+
+.app-alert-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+  opacity: 0.6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.app-alert-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .app-alert-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Alert Variants */
+.app-alert-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.05));
+  border: 1.5px solid rgba(16, 185, 129, 0.35);
+  color: #065f46;
+}
+
+[data-theme="dark"] .app-alert-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 78, 59, 0.3));
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #6ee7b7;
+}
+
+.app-alert-danger, .app-alert-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.04));
+  border: 1.5px solid rgba(239, 68, 68, 0.35);
+  color: #991b1b;
+}
+
+[data-theme="dark"] .app-alert-danger, [data-theme="dark"] .app-alert-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(127, 29, 29, 0.3));
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+}
+
+.app-alert-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04));
+  border: 1.5px solid rgba(245, 158, 11, 0.35);
+  color: #92400e;
+}
+
+[data-theme="dark"] .app-alert-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(120, 53, 15, 0.3));
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fde68a;
+}
+
+.app-alert-info {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(56, 189, 248, 0.06));
+  border: 1.5px solid rgba(124, 58, 237, 0.35);
+  color: #5b21b6;
+}
+
+[data-theme="dark"] .app-alert-info {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(30, 27, 75, 0.35));
+  border-color: rgba(139, 92, 246, 0.45);
+  color: #c4b5fd;
+}
