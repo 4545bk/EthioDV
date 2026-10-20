@@ -75,7 +75,7 @@
 /* ========================================================= */
 /* DARK MODE (Sleek Obsidian/Slate Glass Theme)              */
 /* ========================================================= */
-[data-theme="dark"] {
+html[data-theme="dark"], body[data-theme="dark"], [data-theme="dark"] {
   --bg-main: #090d16;
   --bg-main-gradient: 
     radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.15) 0px, transparent 50%),

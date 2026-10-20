@@ -17,6 +17,9 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     try {
       document.documentElement.setAttribute('data-theme', theme);
+      if (document.body) {
+        document.body.setAttribute('data-theme', theme);
+      }
       localStorage.setItem('ethiodv_theme', theme);
 
       // Update mobile browser status bar color

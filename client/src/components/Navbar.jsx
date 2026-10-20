@@ -110,6 +110,7 @@ export default function Navbar({ onNavigate, currentPage }) {
 
           {/* Theme Toggle Button (Aspio Light / Dark Mode) */}
           <button
+            id="theme-toggle-btn"
             onClick={toggleTheme}
             className="btn btn-secondary"
             style={{
