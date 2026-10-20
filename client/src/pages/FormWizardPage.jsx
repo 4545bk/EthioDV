@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest } from '../services/api.js';
 import PhotoUploadCrop from '../components/PhotoUploadCrop.jsx';
-import { ArrowLeft, ArrowRight, Save, CheckCircle, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, CheckCircle, AlertCircle, Plus, Trash2, Camera, ExternalLink } from 'lucide-react';
 
 export default function FormWizardPage({ onNavigate, entryId }) {
   const { t } = useLanguage();
@@ -410,10 +410,41 @@ export default function FormWizardPage({ onNavigate, entryId }) {
       {/* STEP 2: Photograph Upload & Crop */}
       {currentStep === 2 && (
         <div className="card animate-fade-in">
-          <h3 style={{ fontSize: 18, marginBottom: 8 }}>ክፍል 2: ፎቶግራፍ / Entrant Photograph</h3>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-            {t('photoTip')} የኛ ሲስተም ፎቶዎን በቀጥታ ወደ 600x600 ፒክሰል ያስተካክላል።
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+            <div>
+              <h3 style={{ fontSize: 18, margin: '0 0 6px 0' }}>ክፍል 2: ፎቶግራፍ / Part 2: Entrant Photograph</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
+                የአሜሪካ ስቴት ዲፓርትመንት ኦፊሴላዊ የDV-2027 ፎቶ መስፈርቶች
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('photo-guide')}
+              className="btn btn-secondary"
+              style={{
+                padding: '7px 14px',
+                fontSize: 12,
+                borderRadius: 9999,
+                borderColor: 'var(--primary-400)',
+                color: 'var(--primary-600)',
+                gap: 6,
+              }}
+            >
+              <Camera size={14} />
+              የፎቶ መስፈርት መመሪያ / View Photo Tool
+              <ExternalLink size={12} />
+            </button>
+          </div>
+
+          {/* Official Photo Rule Banner */}
+          <div className="info-box" style={{ marginBottom: 20, borderLeft: '4px solid var(--primary-500)' }}>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: 'var(--text-main)' }}>
+              <strong>It must be a photo with a white background, without glasses, taken within the last 6 months. Our system will automatically resize your photo to 600x600 pixels.</strong>
+            </p>
+            <p style={{ margin: '6px 0 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+              (ፎቶው ነጭ ጀርባ ያለው፣ መነፅር የሌለበት፣ በቅርብ 6 ወራት ውስጥ የተነሳ መሆን አለበት። የእኛ ሲስተም ፎቶዎን በቀጥታ ወደ 600x600 ፒክሰል ያስተካክላል።)
+            </p>
+          </div>
 
           <PhotoUploadCrop
             label="የዋናው አመልካች ፎቶ (Principal Photo)"

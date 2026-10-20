@@ -7,8 +7,9 @@ export const am = {
   trackQueue: 'ደረጃዬን ተመልከት',
   faq: 'ጥያቄና መልስ',
   refundPolicy: 'የገንዘብ ተመላሽ ደንብ',
-  login: 'ግባ',
-  logout: 'ውጣ',
+  photoGuide: 'የፎቶ መስፈርት',
+  login: 'ይግቡ (Login)',
+  logout: 'ውጣ (Logout)',
   operatorStation: 'የኦፕሬተር መስሪያ',
   adminDashboard: 'አድሚን ዳሽቦርድ',
 
@@ -16,7 +17,7 @@ export const am = {
   disclaimer: 'EthioDV-FillTrack ራሱን የቻለ የማመልከቻ አጋዥ አገልግሎት ሲሆን ከአሜሪካ መንግስት ወይም ከስቴት ዲፓርትመንት ጋር ምንም ዓይነት ግንኙነት የለውም። ይፋዊው የዲቪ ሎተሪ ማመልከቻ በ dvprogram.state.gov በነፃ የሚሞላ ነው። ክፍያችን ለፎርም ዝግጅት፣ ፎቶ ማስተካከል እና ለኦፊሴላዊ ምዝገባ ድጋፍ ብቻ ነው።',
 
   // Hero Section
-  heroTitle: 'የDV-2027 ሎተሪዎን ያለ ዶላር ካርድ በብር ይሙሉ',
+  heroTitle: 'የDV-2027 ሎተሪዎን ያለ ዶላር ካርድ በብር (ETB) ይሙሉ',
   heroSubtitle: 'የDS-5501 ቅጽዎን በአማርኛ ይሙሉ፣ በቴሌብር ወይም በንግድ ባንክ (CBE) 1,000 ብር ብቻ ይክፈሉ፤ የባለሙያ ቡድናችን ይፋዊውን ማመልከቻዎን በአሜሪካ ድረ-ገጽ ላይ በቀጥታ ያስገባልዎታል።',
   heroCta: 'አሁን ማመልከት ጀምር',
   heroTrackCta: 'ደረጃህን ተከታተል',

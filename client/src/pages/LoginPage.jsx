@@ -3,7 +3,7 @@ import { useLanguage } from '../i18n/index.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { apiRequest } from '../services/api.js';
 import GoogleLoginButton from '../components/GoogleLoginButton.jsx';
-import { Mail, Lock, User, Send, Shield, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Send, Shield, AlertCircle, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function LoginPage({ onNavigate }) {
   const { t } = useLanguage();
@@ -334,7 +334,13 @@ export default function LoginPage({ onNavigate }) {
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '12px 0', fontSize: 14, marginTop: 4 }}
               >
-                {isLoading ? 'እየገባ ነው...' : 'ይግቡ / Sign In'}
+                {isLoading ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <Loader2 size={16} className="animate-spin" /> እየገባ ነው... / Signing In...
+                  </span>
+                ) : (
+                  'ይግቡ / Sign In'
+                )}
               </button>
             </form>
 
@@ -440,7 +446,13 @@ export default function LoginPage({ onNavigate }) {
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '12px 0', fontSize: 14, marginTop: 4 }}
               >
-                {isLoading ? 'እየተፈጠረ ነው...' : 'መለያ ፍጠር / Create Account'}
+                {isLoading ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <Loader2 size={16} className="animate-spin" /> እየተፈጠረ ነው... / Creating Account...
+                  </span>
+                ) : (
+                  'መለያ ፍጠር / Create Account'
+                )}
               </button>
             </form>
           </div>
@@ -473,8 +485,15 @@ export default function LoginPage({ onNavigate }) {
                   className="btn btn-primary"
                   style={{ width: '100%', padding: '12px 0', fontSize: 14 }}
                 >
-                  {isLoading ? 'እየተላከ ነው...' : 'የማረጋገጫ ኮድ ላክ / Send Code'}
-                  <Send size={15} />
+                  {isLoading ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <Loader2 size={16} className="animate-spin" /> እየተላከ ነው...
+                    </span>
+                  ) : (
+                    <>
+                      የማረጋገጫ ኮድ ላክ / Send Code <Send size={15} />
+                    </>
+                  )}
                 </button>
               </form>
             ) : (
@@ -511,7 +530,13 @@ export default function LoginPage({ onNavigate }) {
                   className="btn btn-primary"
                   style={{ width: '100%', padding: '12px 0', fontSize: 14 }}
                 >
-                  {isLoading ? 'እየተረጋገጠ ነው...' : 'ኮዱን አረጋግጥና ግባ / Verify & Login'}
+                  {isLoading ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <Loader2 size={16} className="animate-spin" /> እየተረጋገጠ ነው...
+                    </span>
+                  ) : (
+                    'ኮዱን አረጋግጥና ግባ / Verify & Login'
+                  )}
                 </button>
               </form>
             )}

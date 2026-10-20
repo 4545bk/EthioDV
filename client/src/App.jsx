@@ -17,6 +17,8 @@ import RefundPolicyPage from './pages/RefundPolicyPage.jsx';
 import FaqPage from './pages/FaqPage.jsx';
 import OperatorStationPage from './pages/OperatorStationPage.jsx';
 import AdminDashboardPage from './pages/AdminDashboardPage.jsx';
+import PhotoGuidePage from './pages/PhotoGuidePage.jsx';
+
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -63,6 +65,8 @@ function AppContent() {
         return <OperatorStationPage onNavigate={navigateTo} />;
       case 'admin':
         return <AdminDashboardPage onNavigate={navigateTo} />;
+      case 'photo-guide':
+        return <PhotoGuidePage onNavigate={navigateTo} />;
       default:
         return <LandingPage onNavigate={navigateTo} />;
     }

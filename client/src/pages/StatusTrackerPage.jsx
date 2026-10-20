@@ -86,22 +86,25 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
       </button>
 
       {/* Main Status Header Card */}
-      <div className="card" style={{ padding: 28, marginBottom: 24, textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: 'var(--primary-300)', fontFamily: 'monospace', fontWeight: 600 }}>
-          #{data.uniqueReference}
-        </span>
-        <h2 style={{ fontSize: 24, margin: '8px 0 12px 0' }}>{t('queueTrackerTitle')}</h2>
+      <div className="card" style={{ padding: '28px 24px', marginBottom: 24, textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 8, background: 'rgba(124, 58, 237, 0.08)', padding: '6px 14px', borderRadius: 9999 }}>
+          <span style={{ fontSize: 14, color: 'var(--primary-600)', fontFamily: 'monospace', fontWeight: 700 }}>
+            #{data.uniqueReference}
+          </span>
+          <CopyButton text={data.uniqueReference} label="Reference" />
+        </div>
+        <h2 style={{ fontSize: 24, margin: '6px 0 12px 0' }}>{t('queueTrackerTitle')}</h2>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <QueueBadge status={data.status} />
         </div>
 
         {/* Dynamic Queue Rank Display */}
         {(isQueued || isFiling) && (
-          <div style={{ background: 'rgba(99, 102, 241, 0.15)', borderRadius: 12, padding: 24, margin: '24px 0 12px 0', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-            <span style={{ fontSize: 13, color: 'var(--primary-300)', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <div style={{ background: 'rgba(124, 58, 237, 0.1)', borderRadius: 'var(--radius-md)', padding: 24, margin: '24px 0 12px 0', border: '1px solid rgba(124, 58, 237, 0.25)' }}>
+            <span style={{ fontSize: 13, color: 'var(--primary-600)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>
               {t('currentPosition')}
             </span>
-            <div style={{ fontSize: 48, fontWeight: 800, color: '#38bdf8', lineHeight: 1.2, margin: '6px 0' }}>
+            <div style={{ fontSize: 48, fontWeight: 800, color: 'var(--primary-600)', lineHeight: 1.2, margin: '6px 0' }}>
               #{data.position || 1}
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
@@ -117,12 +120,13 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
           id="confirmation-certificate"
           className="card animate-pulse-glow"
           style={{
-            background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%)',
+            background: 'var(--bg-card)',
             border: '2px solid var(--success)',
             padding: 36,
             textAlign: 'center',
             marginBottom: 24,
             boxShadow: '0 0 30px rgba(16, 185, 129, 0.25)',
+            borderRadius: 'var(--radius-lg)',
           }}
         >
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto' }}>
@@ -130,19 +134,19 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
           </div>
 
           <span className="badge badge-success" style={{ marginBottom: 12 }}>ይፋዊ የዲቪ ማረጋገጫ / Official Confirmation</span>
-          <h3 style={{ fontSize: 20, color: '#ffffff', marginBottom: 6 }}>{t('officialConfirmationTitle')}</h3>
+          <h3 style={{ fontSize: 20, color: 'var(--text-main)', marginBottom: 6, fontWeight: 700 }}>{t('officialConfirmationTitle')}</h3>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
             ይህ ባለ 16 ዲጂት ቁጥር የእርስዎ የግል ንብረት ነው። ማመልከቻዎ በይፋዊው የአሜሪካ ድረ-ገጽ ላይ ገብቷል።
           </p>
 
-          <div style={{ background: '#090d16', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 18, marginBottom: 20, display: 'inline-flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: 4, color: '#38bdf8', fontFamily: 'monospace' }}>
+          <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 18, marginBottom: 20, display: 'inline-flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: 4, color: 'var(--primary-600)', fontFamily: 'monospace' }}>
               {data.confirmationNumber}
             </span>
             <CopyButton text={data.confirmationNumber} label="Confirmation Number" />
           </div>
 
-          <div style={{ background: 'rgba(56, 189, 248, 0.1)', borderLeft: '4px solid #38bdf8', borderRadius: 4, padding: 12, textAlign: 'left', fontSize: 13, lineHeight: 1.5, color: '#bae6fd', marginBottom: 24 }}>
+          <div style={{ background: 'rgba(56, 189, 248, 0.1)', borderLeft: '4px solid #38bdf8', borderRadius: 4, padding: 12, textAlign: 'left', fontSize: 13, lineHeight: 1.5, color: 'var(--text-main)', marginBottom: 24 }}>
             <strong>ውጤት መቼ ይታያል?</strong><br />
             ውጤቱ በሜይ ወር በ <strong>dvprogram.state.gov</strong> ላይ ይፋ ይሆናል። ውጤትዎን ለማየት ይህን የማረጋገጫ ቁጥር፣ የአያት ስምዎን እና የትውልድ ዓመትዎን ማስገባት አለብዎት።
           </div>
@@ -164,46 +168,184 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
         </div>
       )}
 
-      {/* Progress Timeline */}
-      <div className="card" style={{ padding: 24, marginBottom: 24 }}>
-        <h4 style={{ fontSize: 15, marginBottom: 18, color: '#ffffff' }}>የሂደቱ ደረጃዎች / Status Timeline</h4>
+      {/* Progress Timeline (Accurate to actual stage) */}
+      <div className="card" style={{ padding: 24, marginBottom: 24, borderRadius: 'var(--radius-lg)' }}>
+        <h4 style={{ fontSize: 16, marginBottom: 20, color: 'var(--text-main)', fontWeight: 700 }}>የሂደቱ ደረጃዎች / Status Timeline</h4>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--success)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>✓</div>
-            <div>
-              <strong style={{ fontSize: 14, color: '#ffffff' }}>ቅጹ ተሞልቶ ገብቷል</strong>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>የDS-5501 ቅጽና ፎቶግራፍ በተሳካ ሁኔታ ተያይዟል</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* STEP 1: Form Filled & Submitted */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: data.status !== 'DRAFT' ? 'var(--success)' : 'rgba(245, 158, 11, 0.15)',
+                color: data.status !== 'DRAFT' ? '#fff' : 'var(--warning)',
+                border: data.status !== 'DRAFT' ? 'none' : '1.5px solid var(--warning)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                flexShrink: 0,
+                marginTop: 2,
+              }}
+            >
+              {data.status !== 'DRAFT' ? '✓' : '1'}
+            </div>
+            <div style={{ flex: 1 }}>
+              <strong style={{ fontSize: 14, color: 'var(--text-main)' }}>
+                {data.status !== 'DRAFT' ? 'ቅጹ ተሞልቶ ገብቷል (Form Submitted)' : 'ቅጹ በረቂቅ ደረጃ ላይ ነው (Draft in Progress)'}
+              </strong>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                {data.status !== 'DRAFT'
+                  ? 'የDS-5501 ቅጽና ፎቶግራፍ በተሳካ ሁኔታ ተሞልቶ ቀርቧል'
+                  : 'የDV-2027 ቅጽዎን መሙላት አልጨረሱም። ቅጹን መሙላት ይቀጥሉ።'}
+              </div>
+              {data.status === 'DRAFT' && (
+                <button
+                  onClick={() => onNavigate('wizard', { entryId: data.entryId || entryId })}
+                  className="btn btn-primary"
+                  style={{ marginTop: 8, padding: '6px 14px', fontSize: 12 }}
+                >
+                  ቅጹን መሙላት ቀጥል / Continue Filling Form →
+                </button>
+              )}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: data.paymentApprovedAt ? 'var(--success)' : 'rgba(148,163,184,0.3)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>
-              {data.paymentApprovedAt ? '✓' : '2'}
+          {/* STEP 2: Payment */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: (data.paymentApprovedAt || isQueued || isFiling || isConfirmed)
+                  ? 'var(--success)'
+                  : data.status === 'PAYMENT_SUBMITTED'
+                  ? 'rgba(124, 58, 237, 0.2)'
+                  : data.status === 'PAYMENT_PENDING'
+                  ? 'rgba(245, 158, 11, 0.2)'
+                  : 'var(--bg-input)',
+                color: (data.paymentApprovedAt || isQueued || isFiling || isConfirmed)
+                  ? '#fff'
+                  : (data.status === 'PAYMENT_SUBMITTED' || data.status === 'PAYMENT_PENDING')
+                  ? 'var(--primary-600)'
+                  : 'var(--text-subtle)',
+                border: '1.5px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                flexShrink: 0,
+                marginTop: 2,
+              }}
+            >
+              {(data.paymentApprovedAt || isQueued || isFiling || isConfirmed) ? '✓' : '2'}
             </div>
-            <div>
-              <strong style={{ fontSize: 14, color: data.paymentApprovedAt ? '#ffffff' : 'var(--text-muted)' }}>ክፍያ ተረጋግጧል</strong>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>የ1,000 ብር ክፍያ ደረሰኝ በአድሚን ተቀባይነት አግኝቷል</div>
+            <div style={{ flex: 1 }}>
+              <strong style={{ fontSize: 14, color: 'var(--text-main)' }}>
+                {(data.paymentApprovedAt || isQueued || isFiling || isConfirmed)
+                  ? 'ክፍያ ተረጋግጧል (Payment Verified)'
+                  : data.status === 'PAYMENT_SUBMITTED'
+                  ? 'ክፍያ በማጣራት ላይ (Payment Under Review)'
+                  : data.status === 'PAYMENT_PENDING'
+                  ? 'ክፍያ ይጠበቃል (Payment Pending)'
+                  : 'ክፍያ (Payment)'}
+              </strong>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                {(data.paymentApprovedAt || isQueued || isFiling || isConfirmed)
+                  ? 'የ1,000 ብር ክፍያ ደረሰኝ በአድሚን ተቀባይነት አግኝቷል'
+                  : data.status === 'PAYMENT_SUBMITTED'
+                  ? 'ያስገቡት የቴሌብር ወይም ንግድ ባንክ ደረሰኝ በኦፕሬተር በመረጋገጥ ላይ ነው'
+                  : data.status === 'PAYMENT_PENDING'
+                  ? 'የ1,000 ብር የአገልግሎት ክፍያ በቴሌብር ወይም በንግድ ባንክ (CBE) ይክፈሉ'
+                  : 'ቅጹ ሲጠናቀቅ የሚፈጸም የ1,000 ብር ክፍያ'}
+              </div>
+              {data.status === 'PAYMENT_PENDING' && (
+                <button
+                  onClick={() => onNavigate('payment', { entryId: data.entryId || entryId })}
+                  className="btn btn-accent"
+                  style={{ marginTop: 8, padding: '6px 14px', fontSize: 12 }}
+                >
+                  ክፍያ ፈጽም / Pay 1,000 ETB →
+                </button>
+              )}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: (isQueued || isFiling || isConfirmed) ? 'var(--success)' : 'rgba(148,163,184,0.3)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>
+          {/* STEP 3: Queue */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: (isQueued || isFiling || isConfirmed) ? 'var(--success)' : 'var(--bg-input)',
+                color: (isQueued || isFiling || isConfirmed) ? '#fff' : 'var(--text-subtle)',
+                border: '1.5px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                flexShrink: 0,
+                marginTop: 2,
+              }}
+            >
               {(isQueued || isFiling || isConfirmed) ? '✓' : '3'}
             </div>
-            <div>
-              <strong style={{ fontSize: 14, color: (isQueued || isFiling || isConfirmed) ? '#ffffff' : 'var(--text-muted)' }}>በቅደም ተከተል ተመዝግቧል (Queued)</strong>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>በከፈሉበት ሰዓት ቅደም ተከተል መሰረት ለመሞላት ተሰልፏል</div>
+            <div style={{ flex: 1 }}>
+              <strong style={{ fontSize: 14, color: 'var(--text-main)' }}>
+                {(isQueued || isFiling || isConfirmed) ? 'በቅደም ተከተል ተመዝግቧል (Queued)' : 'የቅደም ተከተል ሰሌዳ (Queue)'}
+              </strong>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                {(isQueued || isFiling || isConfirmed)
+                  ? `በከፈሉበት ሰዓት ቅደም ተከተል መሰረት ለመሞላት ተሰልፏል (ተራ #${data.position || 1})`
+                  : 'ክፍያው ሲረጋገጥ ቅደም ተከተል ይሰጥዎታል'}
+              </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: isConfirmed ? 'var(--success)' : isFiling ? 'var(--info)' : 'rgba(148,163,184,0.3)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>
+          {/* STEP 4: Official US Submission */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: isConfirmed ? 'var(--success)' : isFiling ? 'var(--primary-600)' : 'var(--bg-input)',
+                color: (isConfirmed || isFiling) ? '#fff' : 'var(--text-subtle)',
+                border: '1.5px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                flexShrink: 0,
+                marginTop: 2,
+              }}
+            >
               {isConfirmed ? '✓' : '4'}
             </div>
-            <div>
-              <strong style={{ fontSize: 14, color: isConfirmed ? '#ffffff' : isFiling ? '#38bdf8' : 'var(--text-muted)' }}>ይፋዊ ማመልከቻ ገብቷል (Confirmed)</strong>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>በአሜሪካ ስቴት ዲፓርትመንት ፖርታል ላይ ተመዝግቦ ቁጥሩ ተሰጥቷል</div>
+            <div style={{ flex: 1 }}>
+              <strong style={{ fontSize: 14, color: 'var(--text-main)' }}>
+                {isConfirmed
+                  ? 'ይፋዊ ማመልከቻ ገብቷል (Confirmed)'
+                  : isFiling
+                  ? 'በኦፕሬተር በመሞላት ላይ... (Filing in Progress)'
+                  : 'ኦፊሴላዊ የዲቪ ማረጋገጫ ቁጥር (Confirmation)'}
+              </strong>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                {isConfirmed
+                  ? 'በአሜሪካ ስቴት ዲፓርትመንት ፖርታል ላይ ተመዝግቦ ባለ 16 ዲጂት ቁጥሩ ተሰጥቷል'
+                  : isFiling
+                  ? 'ባለሙያችን በአሜሪካ ድረ-ገጽ ላይ ማመልከቻዎን እየሞላ ነው'
+                  : 'ይፋዊው ባለ 16 ዲጂት የማረጋገጫ ቁጥር ይሰጥዎታል'}
+              </div>
             </div>
           </div>
         </div>

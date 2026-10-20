@@ -7,7 +7,8 @@ export const en = {
   trackQueue: 'Track Status',
   faq: 'FAQ',
   refundPolicy: 'Refund Policy',
-  login: 'Sign In',
+  photoGuide: 'Photo Tool',
+  login: 'Login',
   logout: 'Sign Out',
   operatorStation: 'Filing Station',
   adminDashboard: 'Admin Dashboard',
@@ -16,8 +17,8 @@ export const en = {
   disclaimer: 'EthioDV-FillTrack is an independent application assistance service and is NOT affiliated with, endorsed by, or operated by the United States Government or the U.S. Department of State. The official Diversity Visa lottery entry is free of charge at dvprogram.state.gov. Our fee is solely for form preparation, document verification, and manual filing assistance.',
 
   // Hero Section
-  heroTitle: 'Enter the US DV-2027 Lottery in Birr Without a USD Card',
-  heroSubtitle: 'Complete our guided DS-5501 form in English or Amharic, pay 1,000 ETB via Telebirr or Commercial Bank of Ethiopia (CBE), and our dedicated two-person team files your official entry directly on the U.S. State Department portal.',
+  heroTitle: 'Fill Your DV-2027 Lottery in Birr (ETB) Without a USD Card',
+  heroSubtitle: 'Complete our guided DS-5501 form in English or Amharic, pay 1,000 Birr (ETB) via Telebirr or Commercial Bank of Ethiopia (CBE); our team of professionals will submit your official application directly to the US State Department website.',
   heroCta: 'Start Your Application',
   heroTrackCta: 'Track Queue Position',
 
