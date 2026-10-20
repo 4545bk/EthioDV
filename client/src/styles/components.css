@@ -419,23 +419,26 @@
 /* MOBILE DRAWER & RESPONSIVE UX HELPERS                    */
 /* ========================================================= */
 .mobile-nav-drawer {
-  position: fixed;
-  top: 60px;
+  position: absolute;
+  top: 100%;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: var(--bg-card);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  z-index: 99;
-  padding: 20px 16px 40px 16px;
+  height: calc(100dvh - 65px);
+  max-height: calc(100vh - 65px);
+  background-color: var(--bg-main);
+  background-image: var(--bg-main-gradient);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  z-index: 1000;
+  padding: 16px 14px 40px 14px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border-top: 1px solid var(--border-subtle);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border-bottom: 2px solid var(--border-subtle);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
 }
 
 .mobile-nav-item {
