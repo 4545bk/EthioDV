@@ -50,9 +50,10 @@ export default function Footer({ onNavigate }) {
 
           <div>
             <h4 style={{ color: 'var(--text-main)', fontSize: 14, marginBottom: 12, fontWeight: 700 }}>ድጋፍና ግንኙነት / Support</h4>
-            <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-muted)' }}>
+              📞 ደንበኞች አገልግሎት: <a href="tel:0949478933" style={{ color: 'var(--primary-600)', fontWeight: 700, textDecoration: 'none' }}>0949478933</a><br />
               የቴሌግራም ቦት: <strong>@DV2027EthiopiaBot</strong><br />
-              የስራ ሰዓት: ሰኞ - ቅዳሜ (2:00 - 12:00)<br />
+              የስራ ሰዓት: 24/7 ክፍት (Customer Support)<br />
               አድራሻ: አዲስ አበባ፣ ኢትዮጵያ
             </p>
           </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest, uploadFileDirect } from '../services/api.js';
 import CopyButton from '../components/CopyButton.jsx';
-import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle } from 'lucide-react';
+import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall } from 'lucide-react';
 
 export default function PaymentPage({ onNavigate, entryId }) {
   const { t } = useLanguage();
@@ -150,65 +150,89 @@ export default function PaymentPage({ onNavigate, entryId }) {
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{t('paymentDesc')}</p>
         </div>
 
-        {/* Unique Reference Code Display */}
-        {entry && (
-          <div
-            style={{
-              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(20, 184, 166, 0.08))',
-              border: '1.5px dashed var(--primary-400)',
-              borderRadius: 'var(--radius-md)',
-              padding: '18px 20px',
-              marginBottom: 24,
-              textAlign: 'center',
-            }}
-          >
-            <span style={{ fontSize: 11, color: 'var(--primary-600)', textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 700 }}>
-              {t('referenceCode')}
-            </span>
+        {/* Customer Service Help Call Banner */}
+        <div
+          className="card animate-fade-in"
+          style={{
+            background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(56, 189, 248, 0.08))',
+            border: '1.5px solid rgba(124, 58, 237, 0.25)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px 20px',
+            marginBottom: 22,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 14,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div
               style={{
-                fontSize: 28,
-                fontWeight: 800,
-                letterSpacing: 4,
-                color: 'var(--primary-600)',
-                margin: '6px 0',
-                fontFamily: 'monospace',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary-600), #9333ea)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                flexShrink: 0,
+                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
               }}
             >
-              {entry.uniqueReference}
+              <PhoneCall size={20} />
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
-              ክፍያውን ሲልኩ በማስታወሻ (Remark / Reason) ቦታ ላይ ይህን ኮድ ይፃፉ።
-            </p>
+            <div>
+              <strong style={{ fontSize: 14, color: 'var(--text-main)', display: 'block' }}>
+                እገዛ ይፈልጋሉ? ወደ ደንበኞች አገልግሎት ይደውሉ (Need Help?)
+              </strong>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                ማንኛውም የክፍያ ወይም የቅጽ አሞላል ጥያቄ ካለዎት በቀጥታ ይደውሉልን
+              </span>
+            </div>
           </div>
-        )}
+          <a
+            href="tel:0949478933"
+            className="btn btn-primary"
+            style={{ padding: '8px 18px', fontSize: 14, borderRadius: 9999, gap: 8, textDecoration: 'none' }}
+          >
+            <Phone size={15} /> 0949478933
+          </a>
+        </div>
 
         {/* Account Details Box (Aspio Clean Sub-Card) */}
-        <div className="sub-card" style={{ marginBottom: 24 }}>
-          <h4 style={{ fontSize: 14, color: 'var(--primary-600)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700 }}>
-            <CreditCard size={17} /> ኦፊሴላዊ የክፍያ አካውንቶች / Official Payment Accounts
+        <div className="sub-card" style={{ marginBottom: 24, border: '1.5px solid var(--border-subtle)', padding: '20px' }}>
+          <h4 style={{ fontSize: 15, color: 'var(--primary-600)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+            <CreditCard size={18} /> ኦፊሴላዊ የክፍያ አካውንቶች / Official Payment Accounts
           </h4>
 
           {/* Telebirr Details */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid var(--border-subtle)', flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <strong style={{ color: 'var(--text-main)', fontSize: 14 }}>ቴሌብር (Telebirr):</strong>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                {settings?.telebirr?.phone || '0949478933'} ({settings?.telebirr?.name || 'EthioDV Service'})
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="badge badge-primary" style={{ fontSize: 11, padding: '3px 8px' }}>ቴሌብር (Telebirr)</span>
+                <strong style={{ color: 'var(--text-main)', fontSize: 16, fontFamily: 'monospace' }}>0949478933</strong>
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 5 }}>
+                የተቀባይ ስም / Recipient Name: <strong style={{ color: 'var(--text-main)' }}>ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)</strong>
               </div>
             </div>
-            <CopyButton text={settings?.telebirr?.phone || '0949478933'} label="Telebirr Phone" />
+            <CopyButton text="0949478933" label="Telebirr Number" />
           </div>
 
           {/* CBE Details */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <strong style={{ color: 'var(--text-main)', fontSize: 14 }}>የኢትዮጵያ ንግድ ባንክ (CBE):</strong>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                {settings?.cbe?.accountNumber || '1000301164328'} ({settings?.cbe?.accountName || 'EthioDV Service'})
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="badge badge-accent" style={{ fontSize: 11, padding: '3px 8px' }}>የኢትዮጵያ ንግድ ባንክ (CBE)</span>
+                <strong style={{ color: 'var(--text-main)', fontSize: 16, fontFamily: 'monospace' }}>1000301164328</strong>
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 5 }}>
+                የተቀባይ ስም / Recipient Name: <strong style={{ color: 'var(--text-main)' }}>ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)</strong>
               </div>
             </div>
-            <CopyButton text={settings?.cbe?.accountNumber || '1000301164328'} label="CBE Account" />
+            <CopyButton text="1000301164328" label="CBE Account" />
           </div>
         </div>
 

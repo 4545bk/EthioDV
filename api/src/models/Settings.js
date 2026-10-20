@@ -17,15 +17,15 @@ const SettingsSchema = new mongoose.Schema(
     },
     telebirr: {
       phone: { type: String, default: '0949478933' },
-      name: { type: String, default: 'EthioDV-FillTrack Service' },
+      name: { type: String, default: 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)' },
     },
     cbe: {
       accountNumber: { type: String, default: '1000301164328' },
-      accountName: { type: String, default: 'EthioDV-FillTrack Service' },
+      accountName: { type: String, default: 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)' },
     },
     cbeBirr: {
       phone: { type: String, default: '0949478933' },
-      name: { type: String, default: 'EthioDV-FillTrack Service' },
+      name: { type: String, default: 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)' },
     },
     intakeEnabled: {
       type: Boolean,
@@ -60,20 +60,30 @@ SettingsSchema.statics.getGlobal = async function () {
   if (!settings) {
     settings = await this.create({
       key: 'global_config',
-      telebirr: { phone: '0949478933', name: 'EthioDV-FillTrack Service' },
-      cbe: { accountNumber: '1000301164328', accountName: 'EthioDV-FillTrack Service' },
+      telebirr: { phone: '0949478933', name: 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)' },
+      cbe: { accountNumber: '1000301164328', accountName: 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)' },
     });
   } else {
-    // Automatically migrate placeholder demo accounts to user's real accounts
+    // Automatically migrate accounts & recipient names to user's real details
     let updated = false;
     if (!settings.cbe?.accountNumber || settings.cbe.accountNumber === '1000123456789') {
       if (!settings.cbe) settings.cbe = {};
       settings.cbe.accountNumber = '1000301164328';
       updated = true;
     }
+    if (!settings.cbe?.accountName || settings.cbe.accountName !== 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)') {
+      if (!settings.cbe) settings.cbe = {};
+      settings.cbe.accountName = 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)';
+      updated = true;
+    }
     if (!settings.telebirr?.phone || settings.telebirr.phone === '0911234567') {
       if (!settings.telebirr) settings.telebirr = {};
       settings.telebirr.phone = '0949478933';
+      updated = true;
+    }
+    if (!settings.telebirr?.name || settings.telebirr.name !== 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)') {
+      if (!settings.telebirr) settings.telebirr = {};
+      settings.telebirr.name = 'ዮሐንስ ሞላ ገሰሰ (Yohannes Mola Gesese)';
       updated = true;
     }
     if (updated) {
