@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import Entry from '../models/Entry.js';
+import { getPresignedDownloadUrl } from '../services/r2.js';
 
 const router = express.Router();
 
@@ -42,6 +43,16 @@ router.get('/status/:entryId', authenticateToken, async (req, res, next) => {
     // Total filed count
     const totalFiled = await Entry.countDocuments({ status: { $in: ['FILED', 'CONFIRMED'] } });
 
+    // Resolve official submission screenshot download URL if filed
+    let screenshotUrl = null;
+    if (entry.officialSubmissionScreenshotKey) {
+      try {
+        screenshotUrl = await getPresignedDownloadUrl(entry.officialSubmissionScreenshotKey);
+      } catch (err) {
+        console.warn('Failed to resolve submission screenshot url:', err.message);
+      }
+    }
+
     return res.json({
       success: true,
       data: {
@@ -54,6 +65,7 @@ router.get('/status/:entryId', authenticateToken, async (req, res, next) => {
         paymentApprovedAt: entry.paymentApprovedAt,
         filedAt: entry.filedAt,
         confirmationNumber: entry.getConfirmationNumber(),
+        officialSubmissionScreenshotUrl: screenshotUrl,
         estimatedHoursRemaining: position ? Math.ceil(position / 16) : null, // ~16 entries per operational hour across 2 operators
       },
     });

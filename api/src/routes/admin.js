@@ -288,6 +288,16 @@ router.post('/entries/:entryId/file', async (req, res, next) => {
       : 'Applicant';
     const yearOfBirth = formData?.primary?.birthDate?.year || 'N/A';
 
+    // Resolve official submission screenshot download URL if present
+    let screenshotUrl = null;
+    if (entry.officialSubmissionScreenshotKey) {
+      try {
+        screenshotUrl = await getPresignedDownloadUrl(entry.officialSubmissionScreenshotKey);
+      } catch (err) {
+        console.warn('Could not generate screenshot download URL for notification:', err.message);
+      }
+    }
+
     if (user?.telegramChatId) {
       await sendTelegramUserMessage(
         user.telegramChatId,
@@ -298,7 +308,7 @@ router.post('/entries/:entryId/file', async (req, res, next) => {
 📋 <b>Ref:</b> <code>${entry.uniqueReference}</code>
 🔢 <b>Confirmation Number:</b> <code>${cleanNum}</code>
 📅 <b>Year of Birth:</b> ${yearOfBirth}
-
+${screenshotUrl ? `\n📸 <b>ይፋዊ የስክሪንሾት ማረጋገጫ (Official Screenshot):</b>\n<a href="${screenshotUrl}">ስክሪንሾቱን እዚህ ተጭነው ያውርዱ / View & Download Screenshot</a>\n` : ''}
 ⚠️ ይህን የማረጋገጫ ቁጥር በጥንቃቄ ያስቀምጡ! ውጤቱ በሜይ ወር በ dvprogram.state.gov ይፋ ይሆናል።
         `.trim()
       );
@@ -310,6 +320,7 @@ router.post('/entries/:entryId/file', async (req, res, next) => {
         confirmationNumber: cleanNum,
         yearOfBirth,
         entryRef: entry.uniqueReference,
+        screenshotUrl,
       });
     }
 

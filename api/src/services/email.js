@@ -70,7 +70,7 @@ export async function sendOtpEmail(toEmail, otpCode) {
 /**
  * Send official confirmation certificate to applicant
  */
-export async function sendConfirmationEmail(toEmail, { applicantName, confirmationNumber, yearOfBirth, entryRef }) {
+export async function sendConfirmationEmail(toEmail, { applicantName, confirmationNumber, yearOfBirth, entryRef, screenshotUrl }) {
   const subject = `Official DV-2027 Confirmation: ${confirmationNumber}`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
@@ -86,6 +86,20 @@ export async function sendConfirmationEmail(toEmail, { applicantName, confirmati
         </div>
         <p style="margin: 12px 0 0 0; color: #cbd5e1; font-size: 13px;">Year of Birth: <strong>${yearOfBirth}</strong> | Entry Ref: <strong>${entryRef}</strong></p>
       </div>
+      ${
+        screenshotUrl
+          ? `
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 24px;">
+        <p style="font-size: 13px; color: #334155; margin: 0 0 10px 0; font-weight: 600;">
+          📸 Official State Department Submission Screenshot:
+        </p>
+        <a href="${screenshotUrl}" target="_blank" style="display: inline-block; background: #059669; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 8px; font-weight: 700; font-size: 13px;">
+          📥 View & Download Official Screenshot
+        </a>
+      </div>
+      `
+          : ''
+      }
       <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; color: #1e40af; line-height: 1.5;">
         <strong>Important:</strong> Keep this confirmation number safe! The official results will be announced in May on <strong>dvprogram.state.gov</strong>. You are the sole owner of this number.
       </div>

@@ -134,7 +134,7 @@ export default function DashboardPage({ onNavigate }) {
                     style={{ fontSize: 13, padding: '8px 16px', borderColor: 'var(--success)', color: 'var(--success)', justifyContent: 'center' }}
                   >
                     <CheckCircle2 size={14} />
-                    ይፋዊ ሰርተፊኬት / View Certificate
+                    ይፋዊ ሰርተፊኬትና ስክሪንሾት / View Confirmation & Screenshot
                   </button>
                 )}
               </div>

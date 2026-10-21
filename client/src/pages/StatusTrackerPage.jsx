@@ -4,13 +4,14 @@ import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest } from '../services/api.js';
 import QueueBadge from '../components/QueueBadge.jsx';
 import CopyButton from '../components/CopyButton.jsx';
-import { CheckCircle2, Clock, ShieldCheck, ArrowLeft, Download, ExternalLink, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck, ArrowLeft, Download, ExternalLink, AlertCircle, Camera, Eye, ZoomIn } from 'lucide-react';
 
 export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
   const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -146,6 +147,111 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
             <CopyButton text={data.confirmationNumber} label="Confirmation Number" />
           </div>
 
+          {/* Official Submission Screenshot Viewer */}
+          {data.officialSubmissionScreenshotUrl ? (
+            <div
+              style={{
+                margin: '20px 0',
+                textAlign: 'left',
+                background: 'var(--bg-input)',
+                border: '1.5px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <strong style={{ fontSize: 14, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Camera size={16} color="var(--primary-500)" />
+                    ይፋዊ የስቴት ዲፓርትመንት ስክሪንሾት (Official Submission Screenshot)
+                  </strong>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+                    ማመልከቻዎ በይፋዊው የአሜሪካ ድረ-ገጽ (dvprogram.state.gov) ላይ ሲገባ የተወሰደ ኦፊሴላዊ ማስረጃ
+                  </p>
+                </div>
+                <a
+                  href={data.officialSubmissionScreenshotUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={`DV2027_Confirmation_${data.confirmationNumber}.jpg`}
+                  className="btn btn-secondary w-full-mobile"
+                  style={{ padding: '6px 14px', fontSize: 12, borderRadius: 9999, gap: 6, justifyContent: 'center' }}
+                >
+                  <Download size={13} /> ስክሪንሾቱን አውርድ (Download)
+                </a>
+              </div>
+
+              {/* Screenshot Image Container with Zoom hint */}
+              <div
+                onClick={() => setScreenshotModalOpen(true)}
+                style={{
+                  position: 'relative',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  border: '1px solid var(--border-subtle)',
+                  background: '#090d16',
+                  cursor: 'zoom-in',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+                title="በሙሉ ስክሪን አጉልተው ይመልከቱ / Click to view full image"
+              >
+                <img
+                  src={data.officialSubmissionScreenshotUrl}
+                  alt="Official DV-2027 Submission Confirmation Screenshot"
+                  style={{ width: '100%', maxHeight: 420, objectFit: 'contain', display: 'block', margin: '0 auto' }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 100%)',
+                    padding: '14px 14px 8px 14px',
+                    color: '#ffffff',
+                    fontSize: 12,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Eye size={13} /> በሙሉ መጠን ለማየት ምስሉን ይጫኑ (Click to expand)
+                  </span>
+                  <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: 700 }}>
+                    {data.confirmationNumber}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                margin: '20px 0',
+                padding: '14px 16px',
+                background: 'rgba(56, 189, 248, 0.08)',
+                border: '1px dashed rgba(56, 189, 248, 0.4)',
+                borderRadius: 'var(--radius-md)',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 12,
+              }}
+            >
+              <Camera size={20} color="#38bdf8" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ flex: 1, fontSize: 13 }}>
+                <strong style={{ color: 'var(--text-main)', display: 'block', marginBottom: 2 }}>
+                  ይፋዊ የስክሪንሾት ማረጋገጫ (Official Submission Screenshot)
+                </strong>
+                <span style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  የእርስዎ ማመልከቻ በስቴት ዲፓርትመንት ፖርታል ላይ በተሳካ ሁኔታ ተመዝግቧል፤ ባለ 16 ዲጂት ቁጥርዎ ከላይ ተቀምጧል። ኦፕሬተሮቻችን ያነሱትን ይፋዊውን ስክሪንሾት በቅርቡ እዚህ ያያይዛሉ።
+                </span>
+              </div>
+            </div>
+          )}
+
           <div style={{ background: 'rgba(56, 189, 248, 0.1)', borderLeft: '4px solid #38bdf8', borderRadius: 4, padding: 12, textAlign: 'left', fontSize: 13, lineHeight: 1.5, color: 'var(--text-main)', marginBottom: 24 }}>
             <strong>ውጤት መቼ ይታያል?</strong><br />
             ውጤቱ በሜይ ወር በ <strong>dvprogram.state.gov</strong> ላይ ይፋ ይሆናል። ውጤትዎን ለማየት ይህን የማረጋገጫ ቁጥር፣ የአያት ስምዎን እና የትውልድ ዓመትዎን ማስገባት አለብዎት።
@@ -155,6 +261,18 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
             <button onClick={() => window.print()} className="btn btn-primary w-full-mobile" style={{ fontSize: 13, justifyContent: 'center' }}>
               <Download size={14} /> {t('downloadCertificate')}
             </button>
+            {data.officialSubmissionScreenshotUrl && (
+              <a
+                href={data.officialSubmissionScreenshotUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download={`DV2027_Confirmation_${data.confirmationNumber}.jpg`}
+                className="btn btn-secondary w-full-mobile"
+                style={{ fontSize: 13, justifyContent: 'center', borderColor: 'var(--primary-400)' }}
+              >
+                <Camera size={14} /> ስክሪንሾት አውርድ / Download Screenshot
+              </a>
+            )}
             <a
               href="https://dvprogram.state.gov"
               target="_blank"
@@ -164,6 +282,74 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
             >
               ይፋዊ ድረ-ገጽ <ExternalLink size={13} />
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* Screenshot Full-Screen Modal Zoom View */}
+      {screenshotModalOpen && data.officialSubmissionScreenshotUrl && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            zIndex: 2000,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 14,
+          }}
+          onClick={() => setScreenshotModalOpen(false)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: 960,
+              width: '100%',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, color: '#ffffff', flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <strong style={{ fontSize: 15 }}>ይፋዊ የዲቪ ማረጋገጫ ስክሪንሾት / Official Confirmation Screenshot</strong>
+                <div style={{ fontSize: 12, color: '#94a3b8' }}>#{data.confirmationNumber}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <a
+                  href={data.officialSubmissionScreenshotUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={`DV2027_Confirmation_${data.confirmationNumber}.jpg`}
+                  className="btn btn-primary"
+                  style={{ padding: '6px 14px', fontSize: 12 }}
+                >
+                  <Download size={13} /> አውርድ / Download
+                </a>
+                <button
+                  onClick={() => setScreenshotModalOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: '6px 14px', fontSize: 12, background: 'rgba(255, 255, 255, 0.2)', color: '#fff', border: 'none' }}
+                >
+                  ✕ ዝጋ / Close
+                </button>
+              </div>
+            </div>
+
+            <img
+              src={data.officialSubmissionScreenshotUrl}
+              alt="Official DV-2027 Submission Screenshot Full"
+              style={{ width: '100%', maxHeight: '78vh', objectFit: 'contain', borderRadius: 8, boxShadow: '0 25px 60px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
+            />
           </div>
         </div>
       )}
