@@ -46,12 +46,19 @@ router.post('/telegram', async (req, res) => {
 
         if (action === 'pay_app') {
           payment.status = 'APPROVED';
-          payment.approvedAt = new Date();
+          if (!payment.approvedAt) {
+            payment.approvedAt = new Date();
+          }
           await payment.save();
 
           if (entry) {
-            entry.status = 'QUEUED';
-            entry.paymentApprovedAt = payment.approvedAt;
+            if (['PAYMENT_PENDING', 'DRAFT', 'PAYMENT_REJECTED'].includes(entry.status)) {
+              entry.status = 'QUEUED';
+            }
+            // CRITICAL: Preserve original approval timestamp so rank never shifts backwards
+            if (!entry.paymentApprovedAt) {
+              entry.paymentApprovedAt = payment.approvedAt;
+            }
             await entry.save();
           }
 
@@ -185,13 +192,20 @@ router.post('/sms', async (req, res) => {
 
     if (pendingPayment) {
       pendingPayment.status = 'APPROVED';
-      pendingPayment.approvedAt = new Date();
+      if (!pendingPayment.approvedAt) {
+        pendingPayment.approvedAt = new Date();
+      }
       await pendingPayment.save();
 
       const entry = await Entry.findById(pendingPayment.entryId);
       if (entry) {
-        entry.status = 'QUEUED';
-        entry.paymentApprovedAt = pendingPayment.approvedAt;
+        if (['PAYMENT_PENDING', 'DRAFT', 'PAYMENT_REJECTED'].includes(entry.status)) {
+          entry.status = 'QUEUED';
+        }
+        // CRITICAL: Preserve original approval timestamp
+        if (!entry.paymentApprovedAt) {
+          entry.paymentApprovedAt = pendingPayment.approvedAt;
+        }
         await entry.save();
       }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../i18n/index.jsx';
 
-export default function QueueBadge({ status }) {
+export default function QueueBadge({ status, paymentStatus }) {
   const { t } = useLanguage();
 
   switch (status) {
@@ -13,6 +13,13 @@ export default function QueueBadge({ status }) {
     case 'QUEUED':
       return <span className="badge badge-info">{t('statusQueued')}</span>;
     case 'PAYMENT_PENDING':
+      if (paymentStatus === 'PENDING_VERIFICATION') {
+        return (
+          <span className="badge badge-warning" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            ደረሰኝ በመጣራት ላይ / Reviewing
+          </span>
+        );
+      }
       return <span className="badge badge-warning">{t('statusPaymentPending')}</span>;
     case 'PAYMENT_REJECTED':
       return <span className="badge badge-danger">{t('statusRejected')}</span>;

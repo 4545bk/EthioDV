@@ -76,29 +76,68 @@ router.post('/submit', authenticateToken, async (req, res, next) => {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized' } });
     }
 
-    // Check if code was already claimed and approved elsewhere
+    if (['QUEUED', 'FILING_IN_PROGRESS', 'FILED', 'CONFIRMED'].includes(entry.status)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'ALREADY_QUEUED',
+          message: 'ይህ ማመልከቻ አስቀድሞ ተረጋግጦ በቅደም ተከተል ውስጥ ይገኛል። / This entry has already been verified and is in the queue.',
+        },
+      });
+    }
+
+    let payment = await Payment.findOne({ entryId: entry._id });
+    if (payment && payment.status === 'APPROVED') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'PAYMENT_ALREADY_APPROVED',
+          message: 'ክፍያዎ አስቀድሞ ጸድቋል! / Payment for this entry is already approved.',
+        },
+      });
+    }
+
+    // Check if code was already claimed and approved or pending elsewhere
     const cleanCode = claimedTransactionCode ? claimedTransactionCode.trim().toUpperCase() : null;
     if (cleanCode) {
-      const existingApproved = await Payment.findOne({
+      const existingPayment = await Payment.findOne({
         claimedTransactionCode: cleanCode,
-        status: 'APPROVED',
+        entryId: { $ne: entry._id },
+        status: { $in: ['APPROVED', 'PENDING_VERIFICATION'] },
       });
 
-      if (existingApproved) {
+      if (existingPayment) {
         return res.status(400).json({
           success: false,
           error: {
             code: 'DUPLICATE_PAYMENT_CODE',
-            message: 'This transaction code has already been claimed and approved for another entry.',
+            message: existingPayment.status === 'APPROVED'
+              ? 'ይህ የግብይት ቁጥር አስቀድሞ ለሌላ ማመልከቻ ጸድቋል። / This transaction code has already been claimed and approved for another entry.'
+              : 'ይህ የግብይት ቁጥር አስቀድሞ ለሌላ ማመልከቻ በመጣራት ላይ ይገኛል። / This transaction code is already pending review for another entry.',
           },
         });
       }
     }
 
+    // Check if exact same receipt file key is reused across different entries
+    const duplicateReceipt = await Payment.findOne({
+      receiptFileKey,
+      entryId: { $ne: entry._id },
+      status: { $in: ['APPROVED', 'PENDING_VERIFICATION'] },
+    });
+    if (duplicateReceipt) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_RECEIPT',
+          message: 'ይህ ደረሰኝ አስቀድሞ ለሌላ ማመልከቻ ገብቷል። / This receipt screenshot has already been submitted for another application.',
+        },
+      });
+    }
+
     const settings = await Settings.getGlobal();
     const amountETBCents = settings.priceETB * 100;
 
-    let payment = await Payment.findOne({ entryId: entry._id });
     if (!payment) {
       payment = new Payment({
         entryId: entry._id,

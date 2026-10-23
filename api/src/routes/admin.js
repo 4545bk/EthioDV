@@ -407,16 +407,29 @@ router.post('/payments/:paymentId/approve', requireSuperAdmin, async (req, res, 
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Payment not found' } });
     }
 
+    const wasAlreadyApproved = payment.status === 'APPROVED';
+
     payment.status = 'APPROVED';
     payment.approvedBy = req.user.id;
-    payment.approvedAt = new Date();
+    if (!payment.approvedAt) {
+      payment.approvedAt = new Date();
+    }
     await payment.save();
 
     const entry = await Entry.findById(payment.entryId);
     if (entry) {
-      entry.status = 'QUEUED';
-      entry.paymentApprovedAt = payment.approvedAt;
+      if (['PAYMENT_PENDING', 'DRAFT', 'PAYMENT_REJECTED'].includes(entry.status)) {
+        entry.status = 'QUEUED';
+      }
+      // CRITICAL: Preserve original approval timestamp so rank never jumps backwards
+      if (!entry.paymentApprovedAt) {
+        entry.paymentApprovedAt = payment.approvedAt;
+      }
       await entry.save();
+    }
+
+    if (wasAlreadyApproved) {
+      return res.json({ success: true, data: { message: 'Payment was already approved. Queue position preserved.' } });
     }
 
     await recordAudit(req, {

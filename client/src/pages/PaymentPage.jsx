@@ -3,7 +3,7 @@ import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest, uploadFileDirect } from '../services/api.js';
 import CopyButton from '../components/CopyButton.jsx';
 import Alert from '../components/Alert.jsx';
-import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall } from 'lucide-react';
+import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall, Clock } from 'lucide-react';
 
 export default function PaymentPage({ onNavigate, entryId }) {
   const { t } = useLanguage();
@@ -19,6 +19,8 @@ export default function PaymentPage({ onNavigate, entryId }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const [existingPayment, setExistingPayment] = useState(null);
+
   // AI Vision OCR States
   const [ocrData, setOcrData] = useState(null);
   const [isScanningOcr, setIsScanningOcr] = useState(false);
@@ -31,9 +33,25 @@ export default function PaymentPage({ onNavigate, entryId }) {
 
     if (entryId) {
       apiRequest(`/entries/${entryId}`).then((res) => {
-        if (res.success) {
-          setEntry(res.data.entry);
+        if (res.success && res.data?.entry) {
+          const loadedEntry = res.data.entry;
+          setEntry(loadedEntry);
+          // If already verified or in queue, take directly to status tracker
+          if (['QUEUED', 'FILING_IN_PROGRESS', 'FILED', 'CONFIRMED'].includes(loadedEntry.status)) {
+            onNavigate('tracker', { entryId });
+          }
         }
+      });
+
+      apiRequest(`/payments/${entryId}`).then((res) => {
+        if (res.success && res.data) {
+          setExistingPayment(res.data);
+          if (res.data.status === 'APPROVED') {
+            onNavigate('tracker', { entryId });
+          }
+        }
+      }).catch(() => {
+        // Normal if no payment record exists yet
       });
     }
   }, [entryId]);
@@ -98,6 +116,13 @@ export default function PaymentPage({ onNavigate, entryId }) {
 
   const handleSubmitPayment = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    if (entry && ['QUEUED', 'FILING_IN_PROGRESS', 'FILED', 'CONFIRMED'].includes(entry.status)) {
+      onNavigate('tracker', { entryId });
+      return;
+    }
+
     if (!receiptFile) {
       setErrorMessage('እባክዎ የክፍያ ደረሰኙን ፎቶ ያስገቡ / Receipt screenshot is required.');
       return;
@@ -263,6 +288,45 @@ export default function PaymentPage({ onNavigate, entryId }) {
             type="success"
             message={successMessage}
           />
+        )}
+
+        {/* Verification Pending Notice */}
+        {existingPayment?.status === 'PENDING_VERIFICATION' && (
+          <div
+            className="card animate-fade-in"
+            style={{
+              background: 'rgba(245, 158, 11, 0.08)',
+              border: '1.5px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px 20px',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Clock size={22} color="#f59e0b" style={{ flexShrink: 0 }} />
+              <div>
+                <strong style={{ fontSize: 14, color: 'var(--text-main)', display: 'block' }}>
+                  የክፍያ ደረሰኝዎ አስቀድሞ ገብቷል (በመጣራት ላይ) / Payment Under Review
+                </strong>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  የላኩት ደረሰኝ በአስተዳዳሪው በመጣራት ላይ ነው። ደጋግመው መላክ አያስፈልግዎትም።
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('tracker', { entryId })}
+              className="btn btn-secondary w-full-mobile"
+              style={{ padding: '6px 14px', fontSize: 12, borderColor: '#f59e0b', color: '#f59e0b', justifyContent: 'center' }}
+            >
+              ሁኔታውን ተከታተል / Track Status
+            </button>
+          </div>
         )}
 
         {/* Payment Submission Form */}

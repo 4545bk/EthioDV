@@ -34,7 +34,18 @@ router.get('/status/:entryId', authenticateToken, async (req, res, next) => {
       } else if (entry.paymentApprovedAt) {
         const aheadCount = await Entry.countDocuments({
           status: 'QUEUED',
-          paymentApprovedAt: { $lt: entry.paymentApprovedAt },
+          $or: [
+            { paymentApprovedAt: { $lt: entry.paymentApprovedAt } },
+            {
+              paymentApprovedAt: entry.paymentApprovedAt,
+              createdAt: { $lt: entry.createdAt },
+            },
+            {
+              paymentApprovedAt: entry.paymentApprovedAt,
+              createdAt: entry.createdAt,
+              _id: { $lt: entry._id },
+            },
+          ],
         });
         position = aheadCount + 1;
       }

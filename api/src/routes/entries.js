@@ -287,7 +287,7 @@ router.post('/:id/submit', authenticateToken, async (req, res, next) => {
       const existingDuplicate = await Entry.findOne({
         _id: { $ne: entry._id },
         identityHash: idHash,
-        status: { $in: ['QUEUED', 'FILING_IN_PROGRESS', 'FILED', 'CONFIRMED'] },
+        status: { $in: ['PAYMENT_PENDING', 'QUEUED', 'FILING_IN_PROGRESS', 'FILED', 'CONFIRMED'] },
       });
 
       if (existingDuplicate) {
@@ -295,7 +295,7 @@ router.post('/:id/submit', authenticateToken, async (req, res, next) => {
           success: false,
           error: {
             code: 'DUPLICATE_APPLICANT_ENTRY',
-            message: 'A Diversity Visa application for this exact name and birth date has already been filed or queued. Entering more than once per lottery year causes automatic disqualification by the US State Department.',
+            message: 'A Diversity Visa application for this exact name and birth date has already been submitted or queued. Entering more than once per lottery year causes automatic disqualification by the US State Department.',
           },
         });
       }

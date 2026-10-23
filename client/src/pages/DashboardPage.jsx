@@ -83,7 +83,7 @@ export default function DashboardPage({ onNavigate }) {
                   <span style={{ fontSize: 13, color: 'var(--primary-600)', fontFamily: 'monospace', fontWeight: 600 }}>
                     #{entry.uniqueReference}
                   </span>
-                  <QueueBadge status={entry.status} />
+                  <QueueBadge status={entry.status} paymentStatus={entry.paymentStatus} />
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
                   <span>የተጀመረበት: {new Date(entry.createdAt).toLocaleDateString()}</span>
@@ -107,13 +107,23 @@ export default function DashboardPage({ onNavigate }) {
                 )}
 
                 {entry.status === 'PAYMENT_PENDING' && (
-                  <button
-                    onClick={() => onNavigate('payment', { entryId: entry.id })}
-                    className="btn btn-accent w-full-mobile"
-                    style={{ fontSize: 13, padding: '8px 16px', justifyContent: 'center' }}
-                  >
-                    ክፍያ ፈጽም / Pay 1,000 ETB
-                  </button>
+                  entry.paymentStatus === 'PENDING_VERIFICATION' ? (
+                    <button
+                      onClick={() => onNavigate('tracker', { entryId: entry.id })}
+                      className="btn btn-secondary w-full-mobile"
+                      style={{ fontSize: 13, padding: '8px 16px', justifyContent: 'center', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b' }}
+                    >
+                      <Clock size={14} /> ደረሰኝ ገብቷል (በመጣራት ላይ) / Review Pending
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onNavigate('payment', { entryId: entry.id })}
+                      className="btn btn-accent w-full-mobile"
+                      style={{ fontSize: 13, padding: '8px 16px', justifyContent: 'center' }}
+                    >
+                      ክፍያ ፈጽም / Pay 1,000 ETB
+                    </button>
+                  )
                 )}
 
                 {(entry.status === 'QUEUED' || entry.status === 'FILING_IN_PROGRESS') && (
