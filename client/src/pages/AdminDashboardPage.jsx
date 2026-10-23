@@ -108,12 +108,12 @@ export default function AdminDashboardPage({ onNavigate }) {
     try {
       setLoading(true);
       const [entriesRes, usersRes, paymentsRes, analyticsRes, activityRes, phoneRes] = await Promise.all([
-        apiRequest('/admin/entries?limit=100').catch(() => ({ data: { entries: [] } })),
-        apiRequest('/admin/users?limit=100').catch(() => ({ data: { users: [] } })),
+        apiRequest(`/admin/entries?limit=150&timeframe=${currentTimeframe}`).catch(() => ({ data: { entries: [] } })),
+        apiRequest(`/admin/users?limit=150&timeframe=${currentTimeframe}`).catch(() => ({ data: { users: [] } })),
         apiRequest('/admin/payments?status=PENDING_VERIFICATION').catch(() => ({ data: [] })),
         apiRequest(`/admin/analytics?timeframe=${currentTimeframe}`).catch(() => ({ data: null })),
-        apiRequest('/admin/recent-activity').catch(() => ({ data: [] })),
-        apiRequest('/admin/phone-directory').catch(() => ({ data: { users: [] } })),
+        apiRequest(`/admin/recent-activity?timeframe=${currentTimeframe}`).catch(() => ({ data: [] })),
+        apiRequest(`/admin/phone-directory?timeframe=${currentTimeframe}`).catch(() => ({ data: { users: [] } })),
       ]);
 
       if (entriesRes.success) setEntries(entriesRes.data?.entries || []);
@@ -499,9 +499,27 @@ export default function AdminDashboardPage({ onNavigate }) {
     }
   };
 
+  // Helper for immediate client-side timeframe matching
+  const isWithinSelectedTimeframe = (dateInput) => {
+    if (!dateInput || timeframe === 'all') return true;
+    const t = new Date(dateInput).getTime();
+    if (isNaN(t)) return true;
+    const now = Date.now();
+    if (timeframe === 'today') {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      return t >= todayStart.getTime();
+    }
+    if (timeframe === '7d') return t >= now - 7 * 86400000;
+    if (timeframe === '15d') return t >= now - 15 * 86400000;
+    if (timeframe === '30d') return t >= now - 30 * 86400000;
+    return true;
+  };
+
   // Filtered phone directory
   const filteredPhones = useMemo(() => {
     return phoneDirectory.filter((item) => {
+      if (!isWithinSelectedTimeframe(item.joinedAt)) return false;
       if (phoneFilter === 'HAS_PHONE' && !item.phone) return false;
       if (phoneFilter === 'PAID' && !item.isPaid) return false;
       if (phoneFilter === 'UNPAID' && item.isPaid) return false;
@@ -516,7 +534,7 @@ export default function AdminDashboardPage({ onNavigate }) {
       }
       return true;
     });
-  }, [phoneDirectory, phoneFilter, phoneSearch]);
+  }, [phoneDirectory, phoneFilter, phoneSearch, timeframe]);
 
   // Copy all phone numbers to clipboard
   const handleCopyAllPhones = () => {
@@ -560,6 +578,7 @@ export default function AdminDashboardPage({ onNavigate }) {
   // Filtered entries list
   const filteredEntries = useMemo(() => {
     return entries.filter((item) => {
+      if (!isWithinSelectedTimeframe(item.createdAt)) return false;
       if (ticketSubFilter === 'PENDING' && item.status !== 'PAYMENT_PENDING') return false;
       if (ticketSubFilter === 'QUEUED' && item.status !== 'QUEUED') return false;
       if (ticketSubFilter === 'CONFIRMED' && item.status !== 'CONFIRMED' && item.status !== 'FILED') return false;
@@ -574,11 +593,12 @@ export default function AdminDashboardPage({ onNavigate }) {
       }
       return true;
     });
-  }, [entries, ticketSubFilter, searchQuery]);
+  }, [entries, ticketSubFilter, searchQuery, timeframe]);
 
   // Filtered users list
   const filteredUsers = useMemo(() => {
     return usersList.filter((u) => {
+      if (!isWithinSelectedTimeframe(u.createdAt)) return false;
       if (userTypeFilter === 'PAID' && !u.isPaid) return false;
       if (userTypeFilter === 'NORMAL' && u.isPaid) return false;
 
@@ -592,7 +612,7 @@ export default function AdminDashboardPage({ onNavigate }) {
       }
       return true;
     });
-  }, [usersList, userTypeFilter, searchQuery]);
+  }, [usersList, userTypeFilter, searchQuery, timeframe]);
 
   // Checkbox row toggles
   const handleToggleSelectAll = (e) => {
@@ -606,6 +626,17 @@ export default function AdminDashboardPage({ onNavigate }) {
   const handleToggleRow = (id) => {
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rId) => rId !== id) : [...prev, id]));
   };
+
+  const timeframeLabel =
+    timeframe === 'today'
+      ? 'Today (Hours)'
+      : timeframe === '15d'
+      ? 'Last 15 Days'
+      : timeframe === '30d'
+      ? 'Last 30 Days (Month)'
+      : timeframe === 'all'
+      ? 'All Time (Full Year)'
+      : 'Last 7 Days (Week)';
 
   // REAL DATABASE NUMBERS
   const realTotalApplications = analytics?.counts?.totalApplications ?? entries.length;
@@ -1876,7 +1907,12 @@ export default function AdminDashboardPage({ onNavigate }) {
                 {/* Metric Card 1: Total Applications */}
                 <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>Total Applications</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>Total Applications</span>
+                      <span style={{ fontSize: 10, background: '#eff6ff', color: '#3b82f6', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                        {timeframeLabel}
+                      </span>
+                    </div>
                     <div style={{ width: 28, height: 28, borderRadius: 7, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
                       <Ticket size={15} />
                     </div>
@@ -1901,7 +1937,12 @@ export default function AdminDashboardPage({ onNavigate }) {
                 {/* Metric Card 2: Paid & Queued (Ready) */}
                 <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>Paid & Queued (Ready)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>Paid & Queued (Ready)</span>
+                      <span style={{ fontSize: 10, background: '#ecfdf5', color: '#059669', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                        {timeframeLabel}
+                      </span>
+                    </div>
                     <div style={{ width: 28, height: 28, borderRadius: 7, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
                       <Zap size={15} />
                     </div>
@@ -1926,7 +1967,12 @@ export default function AdminDashboardPage({ onNavigate }) {
                 {/* Metric Card 3: Payment Conversion Rate */}
                 <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>Registered User Conversion</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>Registered User Conversion</span>
+                      <span style={{ fontSize: 10, background: '#faf5ff', color: '#9333ea', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                        {timeframeLabel}
+                      </span>
+                    </div>
                     <div style={{ width: 28, height: 28, borderRadius: 7, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
                       <Clock size={15} />
                     </div>
@@ -1978,7 +2024,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                     <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>Live Synced</span>
                   </div>
 
-                  {/* Responsive Bar Chart based on real 7-day counts */}
+                  {/* Responsive Bar Chart dynamically styled for 5 intervals (hours, 7d, 15d, 30d, all-time) */}
                   <div style={{ flex: 1, minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative' }}>
                     <div
                       style={{
@@ -1992,24 +2038,40 @@ export default function AdminDashboardPage({ onNavigate }) {
                     >
                       {chartDays.map((bar, idx) => {
                         const barHeight = Math.max(12, Math.round((bar.count / maxDayCount) * 110));
-                        const isToday = new Date().getDay() === idx;
+                        const isCurrent =
+                          timeframe === 'today'
+                            ? idx === Math.min(5, Math.floor(new Date().getHours() / 4))
+                            : timeframe === '7d'
+                            ? bar.day === 'Today' || idx === chartDays.length - 1
+                            : timeframe === '15d'
+                            ? bar.day === `${new Date().getMonth() + 1}/${new Date().getDate()}` || idx === chartDays.length - 1
+                            : timeframe === '30d'
+                            ? bar.day === 'Current' || idx === chartDays.length - 1
+                            : timeframe === 'all'
+                            ? bar.day === ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][new Date().getMonth()]
+                            : idx === chartDays.length - 1;
+
+                        const colWidth = chartDays.length > 12 ? 22 : chartDays.length > 7 ? 28 : 36;
+                        const pillarWidth = chartDays.length > 12 ? 10 : chartDays.length > 7 ? 14 : 18;
+                        const labelFontSize = chartDays.length > 12 ? 9 : chartDays.length > 7 ? 10 : 11;
+
                         return (
-                          <div key={bar.day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 36, position: 'relative' }}>
+                          <div key={bar.day + idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: colWidth, position: 'relative' }}>
                             {bar.count > 0 && (
-                              <span style={{ fontSize: 10, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
+                              <span style={{ fontSize: labelFontSize, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
                                 {bar.count}
                               </span>
                             )}
                             <div
                               style={{
-                                width: 18,
+                                width: pillarWidth,
                                 height: barHeight,
                                 borderRadius: 4,
-                                background: isToday ? '#0f172a' : '#cbd5e1',
+                                background: isCurrent ? '#0f172a' : '#cbd5e1',
                                 transition: 'height 0.3s ease',
                               }}
                             />
-                            <span style={{ fontSize: 11, color: isToday ? '#0f172a' : '#64748b', marginTop: 8, fontWeight: isToday ? 700 : 500 }}>
+                            <span style={{ fontSize: labelFontSize, color: isCurrent ? '#0f172a' : '#64748b', marginTop: 8, fontWeight: isCurrent ? 700 : 500, whiteSpace: 'nowrap' }}>
                               {bar.day}
                             </span>
                           </div>
@@ -2078,6 +2140,9 @@ export default function AdminDashboardPage({ onNavigate }) {
                           ? 'Registered Users Phone Directory'
                           : 'Applicant Queue & Operations'}
                       </span>
+                      <span style={{ fontSize: 11, background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: 9999, fontWeight: 700 }}>
+                        {timeframeLabel}
+                      </span>
                     </div>
 
                     <div style={{ display: 'flex', background: '#f1f5f9', padding: 2, borderRadius: 8, flexWrap: 'wrap', gap: 2 }}>
@@ -2094,7 +2159,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                           color: activeNav === 'overview' ? '#ffffff' : '#64748b',
                         }}
                       >
-                        Applications ({entries.length})
+                        Applications ({filteredEntries.length})
                       </button>
                       <button
                         onClick={() => setActiveNav('clients')}
@@ -2109,7 +2174,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                           color: activeNav === 'clients' ? '#ffffff' : '#64748b',
                         }}
                       >
-                        Clients / Users ({usersList.length})
+                        Clients / Users ({filteredUsers.length})
                       </button>
                       <button
                         onClick={() => setActiveNav('phones')}
@@ -2128,7 +2193,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                         }}
                       >
                         <Phone size={12} />
-                        <span>Phone Directory ({phoneDirectory.filter((p) => p.phone).length})</span>
+                        <span>Phone Directory ({filteredPhones.filter((p) => p.phone).length})</span>
                       </button>
                       <button
                         onClick={() => {

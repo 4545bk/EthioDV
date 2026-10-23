@@ -46,6 +46,32 @@ async function recordAudit(req, { action, targetEntity, targetId, metadata }) {
   }
 }
 
+/**
+ * Helper to compute timeframe date boundaries
+ * Supports: 'today' | '7d' | '15d' | '30d' | 'all'
+ */
+function getTimeframeFilter(timeframe) {
+  const now = new Date();
+  if (timeframe === 'today') {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    return { startDate: start, isAllTime: false };
+  }
+  if (timeframe === '15d') {
+    const start = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+    return { startDate: start, isAllTime: false };
+  }
+  if (timeframe === '30d') {
+    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { startDate: start, isAllTime: false };
+  }
+  if (timeframe === 'all') {
+    return { startDate: null, isAllTime: true };
+  }
+  // Default: '7d'
+  const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  return { startDate: start, isAllTime: false };
+}
+
 // ==================== OPERATOR FILING STATION ====================
 
 /**
@@ -606,36 +632,73 @@ router.post('/payments/:paymentId/reject', requireSuperAdmin, async (req, res, n
 
 /**
  * GET /api/v1/admin/analytics
- * Comprehensive financial and funnel analytics
+ * Comprehensive financial and funnel analytics filtered by timeframe
  */
 router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
   try {
     const settings = await Settings.getGlobal();
+    const timeframe = req.query.timeframe || '7d';
+    const { startDate, isAllTime } = getTimeframeFilter(timeframe);
 
-    // 1. Gross Revenue
-    const approvedPayments = await Payment.find({ status: 'APPROVED' });
-    const grossRevenueCents = approvedPayments.reduce((acc, p) => acc + (p.amountETBCents || 0), 0);
+    // Filter queries scoped to the selected timeframe
+    const entryFilter = isAllTime ? {} : { createdAt: { $gte: startDate } };
+    const paymentFilter = isAllTime ? { status: 'APPROVED' } : { status: 'APPROVED', createdAt: { $gte: startDate } };
+    const userFilter = isAllTime ? {} : { createdAt: { $gte: startDate } };
+    const refundFilter = isAllTime ? { status: 'PROCESSED' } : { status: 'PROCESSED', createdAt: { $gte: startDate } };
+
+    // 1. Period & Lifetime Payments
+    const [periodApprovedPayments, allApprovedPayments] = await Promise.all([
+      Payment.find(paymentFilter),
+      Payment.find({ status: 'APPROVED' }),
+    ]);
+
+    const grossRevenueCents = periodApprovedPayments.reduce((acc, p) => acc + (p.amountETBCents || 0), 0);
     const grossRevenueETB = grossRevenueCents / 100;
 
-    // 2. Counts (Real Database Queries)
-    const totalUsers = await User.countDocuments();
-    const totalApplications = await Entry.countDocuments();
-    const totalDrafts = await Entry.countDocuments({ status: 'DRAFT' });
-    const totalSubmitted = await Entry.countDocuments({ status: { $ne: 'DRAFT' } });
-    const totalPendingPayment = await Entry.countDocuments({ status: 'PAYMENT_PENDING' });
-    const totalPaid = approvedPayments.length;
-    const totalFiled = await Entry.countDocuments({ status: { $in: ['FILED', 'CONFIRMED'] } });
-    const totalQueued = await Entry.countDocuments({ status: { $in: ['QUEUED', 'FILING_IN_PROGRESS'] } });
+    const allGrossRevenueCents = allApprovedPayments.reduce((acc, p) => acc + (p.amountETBCents || 0), 0);
+    const allGrossRevenueETB = allGrossRevenueCents / 100;
 
-    // 3. Dynamic Volume Trend by Timeframe
-    const timeframe = req.query.timeframe || '7d';
+    // 2. Counts (Scoped to selected timeframe + Lifetime)
+    const [
+      totalUsers,
+      totalApplications,
+      totalDrafts,
+      totalSubmitted,
+      totalPendingPayment,
+      totalFiled,
+      totalQueued,
+      allUsersCount,
+      allAppsCount,
+      allPendingCount,
+      allFiledCount,
+      allQueuedCount,
+      allDraftsCount,
+    ] = await Promise.all([
+      User.countDocuments(userFilter),
+      Entry.countDocuments(entryFilter),
+      Entry.countDocuments({ ...entryFilter, status: 'DRAFT' }),
+      Entry.countDocuments({ ...entryFilter, status: { $ne: 'DRAFT' } }),
+      Entry.countDocuments({ ...entryFilter, status: 'PAYMENT_PENDING' }),
+      Entry.countDocuments({ ...entryFilter, status: { $in: ['FILED', 'CONFIRMED'] } }),
+      Entry.countDocuments({ ...entryFilter, status: { $in: ['QUEUED', 'FILING_IN_PROGRESS'] } }),
+      User.countDocuments(),
+      Entry.countDocuments(),
+      Entry.countDocuments({ status: 'PAYMENT_PENDING' }),
+      Entry.countDocuments({ status: { $in: ['FILED', 'CONFIRMED'] } }),
+      Entry.countDocuments({ status: { $in: ['QUEUED', 'FILING_IN_PROGRESS'] } }),
+      Entry.countDocuments({ status: 'DRAFT' }),
+    ]);
+
+    const totalPaid = periodApprovedPayments.length;
+    const allPaidCount = allApprovedPayments.length;
+
+    // 3. Dynamic Volume Trend Buckets for all 5 intervals
     const now = new Date();
-    let startDate;
     let chartDays = [];
 
     if (timeframe === 'today') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const todayEntries = await Entry.find({ createdAt: { $gte: startDate } });
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const todayEntries = await Entry.find({ createdAt: { $gte: todayStart } });
       const blocks = ['12AM', '4AM', '8AM', '12PM', '4PM', '8PM'];
       const blockCounts = [0, 0, 0, 0, 0, 0];
       todayEntries.forEach((e) => {
@@ -645,33 +708,33 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
       });
       chartDays = blocks.map((b, i) => ({ day: b, count: blockCounts[i] }));
     } else if (timeframe === '15d') {
-      startDate = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
       const entries15 = await Entry.find({ createdAt: { $gte: startDate } });
       const dayMap = {};
+      const dayList = [];
       for (let i = 14; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
         const label = `${d.getMonth() + 1}/${d.getDate()}`;
-        dayMap[label] = 0;
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        dayMap[key] = { day: label, count: 0 };
+        dayList.push(dayMap[key]);
       }
       entries15.forEach((e) => {
         const d = new Date(e.createdAt);
-        const label = `${d.getMonth() + 1}/${d.getDate()}`;
-        if (dayMap[label] !== undefined) dayMap[label]++;
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        if (dayMap[key]) dayMap[key].count++;
       });
-      chartDays = Object.keys(dayMap).map((k) => ({ day: k, count: dayMap[k] }));
+      chartDays = dayList;
     } else if (timeframe === '30d') {
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const entries30 = await Entry.find({ createdAt: { $gte: startDate } });
       const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Current'];
       const weekCounts = [0, 0, 0, 0, 0];
       entries30.forEach((e) => {
         const diffDays = Math.floor((now.getTime() - new Date(e.createdAt).getTime()) / (24 * 60 * 60 * 1000));
-        const wIdx = Math.min(4, Math.max(0, 4 - Math.floor(diffDays / 7)));
+        const wIdx = Math.min(4, Math.max(0, 4 - Math.floor(diffDays / 6)));
         weekCounts[wIdx]++;
       });
       chartDays = weeks.map((w, i) => ({ day: w, count: weekCounts[i] }));
     } else if (timeframe === 'all') {
-      startDate = new Date(0);
       const allEntries = await Entry.find({});
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const monthCounts = new Array(12).fill(0);
@@ -681,25 +744,30 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
       });
       chartDays = months.map((m, i) => ({ day: m, count: monthCounts[i] }));
     } else {
-      // 7d (Default)
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const daysName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const recentWeekEntries = await Entry.find({ createdAt: { $gte: startDate } });
-      const volumeByDayMap = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
-      recentWeekEntries.forEach((e) => {
-        const d = daysName[new Date(e.createdAt).getDay()];
-        volumeByDayMap[d] = (volumeByDayMap[d] || 0) + 1;
+      // 7d (Default) - rolling 7 chronological days ending with Today
+      const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const weekEntries = await Entry.find({ createdAt: { $gte: startDate } });
+      const dayMap7 = {};
+      const dayList7 = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const label = i === 0 ? 'Today' : daysShort[d.getDay()];
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        dayMap7[key] = { day: label, count: 0 };
+        dayList7.push(dayMap7[key]);
+      }
+      weekEntries.forEach((e) => {
+        const d = new Date(e.createdAt);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        if (dayMap7[key]) dayMap7[key].count++;
       });
-      chartDays = daysName.map((d) => ({
-        day: d,
-        count: volumeByDayMap[d],
-      }));
+      chartDays = dayList7;
     }
 
-    const periodEntryCount = await Entry.countDocuments({ createdAt: { $gte: startDate } });
+    const periodEntryCount = totalApplications;
 
     // 4. Refunds
-    const processedRefunds = await Refund.find({ status: 'PROCESSED' });
+    const processedRefunds = await Refund.find(refundFilter);
     const totalRefundsCents = processedRefunds.reduce((acc, r) => acc + (r.requestedAmountCents || 0), 0);
     const totalRefundsETB = totalRefundsCents / 100;
 
@@ -709,7 +777,7 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
     // 6. Net Profit
     const netProfitETB = grossRevenueETB - (directFilingCostETB + totalRefundsETB);
 
-    const paidConversionRate = totalUsers > 0 ? ((totalPaid / totalUsers) * 100).toFixed(1) + '%' : '0%';
+    const paidConversionRate = totalUsers > 0 ? ((totalPaid / totalUsers) * 100).toFixed(1) + '%' : (totalApplications > 0 ? ((totalPaid / totalApplications) * 100).toFixed(1) + '%' : '0%');
 
     return res.json({
       success: true,
@@ -721,6 +789,9 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
           netProfitETB,
           usdToEtbExchangeRate: settings.usdToEtbExchangeRate,
         },
+        allTimeFinancials: {
+          grossRevenueETB: allGrossRevenueETB,
+        },
         counts: {
           totalUsers,
           totalApplications,
@@ -730,6 +801,15 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
           totalPaid,
           totalQueued,
           totalFiled,
+        },
+        allTimeCounts: {
+          totalUsers: allUsersCount,
+          totalApplications: allAppsCount,
+          totalPaid: allPaidCount,
+          totalPendingPayment: allPendingCount,
+          totalFiled: allFiledCount,
+          totalQueued: allQueuedCount,
+          totalDrafts: allDraftsCount,
         },
         volumeByDay: chartDays,
         recentWeekCount: periodEntryCount,
@@ -892,7 +972,7 @@ router.post('/reminders/send-unpaid-reminders', requireSuperAdmin, async (req, r
  */
 router.get('/entries', async (req, res, next) => {
   try {
-    const { status, search, page = 1, limit = 50 } = req.query;
+    const { status, search, page = 1, limit = 50, timeframe } = req.query;
     const query = {};
 
     if (status && status !== 'ALL') {
@@ -901,6 +981,13 @@ router.get('/entries', async (req, res, next) => {
 
     if (search) {
       query.uniqueReference = { $regex: search.trim(), $options: 'i' };
+    }
+
+    if (timeframe && timeframe !== 'all') {
+      const { startDate } = getTimeframeFilter(timeframe);
+      if (startDate) {
+        query.createdAt = { $gte: startDate };
+      }
     }
 
     const total = await Entry.countDocuments(query);
@@ -1133,7 +1220,7 @@ router.delete('/entries/:entryId', requireSuperAdmin, async (req, res, next) => 
  */
 router.get('/users', requireSuperAdmin, async (req, res, next) => {
   try {
-    const { search, type, page = 1, limit = 50 } = req.query;
+    const { search, type, page = 1, limit = 50, timeframe } = req.query;
     const query = {};
 
     if (search) {
@@ -1142,6 +1229,13 @@ router.get('/users', requireSuperAdmin, async (req, res, next) => {
         { fullName: { $regex: search.trim(), $options: 'i' } },
         { telegramUsername: { $regex: search.trim(), $options: 'i' } },
       ];
+    }
+
+    if (timeframe && timeframe !== 'all') {
+      const { startDate } = getTimeframeFilter(timeframe);
+      if (startDate) {
+        query.createdAt = { $gte: startDate };
+      }
     }
 
     const total = await User.countDocuments(query);
@@ -1258,10 +1352,19 @@ router.delete('/users/:userId', requireSuperAdmin, async (req, res, next) => {
  */
 router.get('/recent-activity', async (req, res, next) => {
   try {
+    const { timeframe } = req.query;
+    const dateQuery = {};
+    if (timeframe && timeframe !== 'all') {
+      const { startDate } = getTimeframeFilter(timeframe);
+      if (startDate) {
+        dateQuery.createdAt = { $gte: startDate };
+      }
+    }
+
     const [recentPayments, recentEntries, recentUsers] = await Promise.all([
-      Payment.find().sort({ createdAt: -1 }).limit(10).populate('userId', 'email fullName'),
-      Entry.find().sort({ createdAt: -1 }).limit(10).populate('userId', 'email fullName'),
-      User.find().sort({ createdAt: -1 }).limit(10),
+      Payment.find(dateQuery).sort({ createdAt: -1 }).limit(15).populate('userId', 'email fullName'),
+      Entry.find(dateQuery).sort({ createdAt: -1 }).limit(15).populate('userId', 'email fullName'),
+      User.find(dateQuery).sort({ createdAt: -1 }).limit(15),
     ]);
 
     const activities = [];
@@ -1353,7 +1456,7 @@ router.get('/download-photo', async (req, res, next) => {
  */
 router.get('/phone-directory', requireSuperAdmin, async (req, res, next) => {
   try {
-    const { search, filter = 'ALL' } = req.query;
+    const { search, filter = 'ALL', timeframe } = req.query;
 
     const [users, entries, formDocs, payments] = await Promise.all([
       User.find({}).sort({ createdAt: -1 }),
@@ -1436,6 +1539,18 @@ router.get('/phone-directory', requireSuperAdmin, async (req, res, next) => {
         joinedAt: u.createdAt,
       };
     });
+
+    if (timeframe && timeframe !== 'all') {
+      const { startDate } = getTimeframeFilter(timeframe);
+      if (startDate) {
+        directory = directory.filter((item) => {
+          const uJoined = new Date(item.joinedAt);
+          const uEntries = userEntriesMap.get(String(item.id)) || [];
+          const hasRecentEntry = uEntries.some((e) => new Date(e.createdAt) >= startDate);
+          return uJoined >= startDate || hasRecentEntry;
+        });
+      }
+    }
 
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
