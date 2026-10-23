@@ -5,6 +5,7 @@ import { apiRequest } from '../services/api.js';
 import QueueBadge from '../components/QueueBadge.jsx';
 import CopyButton from '../components/CopyButton.jsx';
 import { CheckCircle2, Clock, ShieldCheck, ArrowLeft, Download, ExternalLink, AlertCircle, Camera, Eye, ZoomIn } from 'lucide-react';
+import ShareReferralCard from '../components/ShareReferralCard.jsx';
 
 export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
   const { t } = useLanguage();
@@ -536,6 +537,9 @@ export default function StatusTrackerPage({ onNavigate, entryId, searchRef }) {
           </div>
         </div>
       </div>
+
+      {/* Share with Family & Friends Referral Section */}
+      <ShareReferralCard entryRef={data.uniqueReference} />
 
       {/* Refund Trigger (Eligible only if QUEUED before filing) */}
       {isQueued && (

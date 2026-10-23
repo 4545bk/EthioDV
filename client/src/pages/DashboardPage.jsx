@@ -4,6 +4,7 @@ import { apiRequest } from '../services/api.js';
 import QueueBadge from '../components/QueueBadge.jsx';
 import Alert from '../components/Alert.jsx';
 import { PlusCircle, FileText, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import ShareReferralCard from '../components/ShareReferralCard.jsx';
 
 export default function DashboardPage({ onNavigate }) {
   const { t } = useLanguage();
@@ -152,6 +153,9 @@ export default function DashboardPage({ onNavigate }) {
           ))}
         </div>
       )}
+
+      {/* Share with Family & Friends Referral Section */}
+      <ShareReferralCard />
     </div>
   );
 }

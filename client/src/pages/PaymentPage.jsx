@@ -3,7 +3,8 @@ import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest, uploadFileDirect } from '../services/api.js';
 import CopyButton from '../components/CopyButton.jsx';
 import Alert from '../components/Alert.jsx';
-import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall, Clock, User, Zap, ShieldCheck } from 'lucide-react';
+import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall, Clock, User, Zap, ShieldCheck, Printer } from 'lucide-react';
+import ApplicationSummaryModal from '../components/ApplicationSummaryModal.jsx';
 
 export default function PaymentPage({ onNavigate, entryId }) {
   const { t } = useLanguage();
@@ -19,6 +20,7 @@ export default function PaymentPage({ onNavigate, entryId }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false);
 
   const [existingPayment, setExistingPayment] = useState(null);
 
@@ -246,9 +248,19 @@ export default function PaymentPage({ onNavigate, entryId }) {
               </div>
             </div>
 
-            <div style={{ fontSize: 12, color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <ShieldCheck size={16} color="#10b981" />
-              <span>ቅድመ-ተራ ዝግጁ ነው / Ready for Queue</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setSummaryModalOpen(true)}
+                className="btn btn-secondary w-full-mobile"
+                style={{ padding: '6px 14px', fontSize: 12, borderRadius: 9999, gap: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Printer size={13} /> ማጠቃለያውን አውርድ (PDF / Print)
+              </button>
+              <div style={{ fontSize: 12, color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck size={16} color="#10b981" />
+                <span>ቅድመ-ተራ ዝግጁ ነው / Ready for Queue</span>
+              </div>
             </div>
           </div>
         )}
@@ -588,6 +600,13 @@ export default function PaymentPage({ onNavigate, entryId }) {
             {isSubmitting ? 'ደረሰኙ እየተላከ ነው...' : t('submitPaymentBtn')}
           </button>
         </form>
+        {/* Printable Application Summary Modal */}
+        <ApplicationSummaryModal
+          isOpen={summaryModalOpen}
+          onClose={() => setSummaryModalOpen(false)}
+          entry={entry}
+          formData={formData}
+        />
       </div>
     </div>
   );

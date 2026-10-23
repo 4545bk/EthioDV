@@ -3,6 +3,7 @@ import { useLanguage } from '../i18n/index.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { apiRequest } from '../services/api.js';
 import { Shield, ShieldCheck, CheckCircle2, Clock, Smartphone, ArrowRight, HelpCircle, AlertCircle, Search } from 'lucide-react';
+import CountdownTimer from '../components/CountdownTimer.jsx';
 
 export default function LandingPage({ onNavigate }) {
   const { t } = useLanguage();
@@ -118,6 +119,13 @@ export default function LandingPage({ onNavigate }) {
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>ማመልከቻው ሳይገባ ቢቀር ወዲያውኑ ተመላሽ</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Live DV-2027 Opening Countdown Section */}
+      <section style={{ padding: '0 0 10px 0' }}>
+        <div className="container" style={{ maxWidth: 840 }}>
+          <CountdownTimer onNavigate={onNavigate} />
         </div>
       </section>
 

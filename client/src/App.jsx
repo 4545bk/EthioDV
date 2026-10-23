@@ -7,6 +7,8 @@ import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import SocialProofToast from './components/SocialProofToast.jsx';
 import UnpaidReminderBanner from './components/UnpaidReminderBanner.jsx';
+import FloatingSupportWidget from './components/FloatingSupportWidget.jsx';
+import NotificationPrompt from './components/NotificationPrompt.jsx';
 
 // Pages
 import LandingPage from './pages/LandingPage.jsx';
@@ -110,12 +112,18 @@ function AppContent() {
       {/* Persistent reminder banner for logged-in users with unpaid applications */}
       <UnpaidReminderBanner onNavigate={navigateTo} currentPage={currentPage} />
 
+      {/* Polite native browser push notification prompt */}
+      <NotificationPrompt />
+
       <main className="main-content">
         {renderPage()}
       </main>
 
       {/* Subtle, live entrant activity toast */}
       <SocialProofToast />
+
+      {/* Floating 24/7 phone & Telegram customer support widget */}
+      <FloatingSupportWidget onNavigate={navigateTo} />
 
       <Footer onNavigate={navigateTo} />
     </div>
