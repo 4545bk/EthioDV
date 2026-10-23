@@ -101,7 +101,7 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [filingStatusMessage, setFilingStatusMessage] = useState('');
   const [filingErrorMessage, setFilingErrorMessage] = useState('');
   const [filingTimeLeft, setFilingTimeLeft] = useState(1800); // 30 mins
-  const [isApplicantDataExpanded, setIsApplicantDataExpanded] = useState(true);
+  const [isApplicantDataExpanded, setIsApplicantDataExpanded] = useState(false);
 
   // Load Real Data from Backend
   const loadDashboardData = async (currentTimeframe = timeframe) => {
@@ -167,7 +167,7 @@ export default function AdminDashboardPage({ onNavigate }) {
       const res = await apiRequest('/admin/queue/claim-next', { method: 'POST' });
       if (res.success && res.data.entry) {
         setActiveFilingData(res.data);
-        setIsApplicantDataExpanded(true);
+        setIsApplicantDataExpanded(false);
         if (res.data.entry.lockExpiresAt) {
           const diff = Math.floor((new Date(res.data.entry.lockExpiresAt).getTime() - Date.now()) / 1000);
           setFilingTimeLeft(Math.max(0, diff));
@@ -2437,10 +2437,24 @@ export default function AdminDashboardPage({ onNavigate }) {
                                     style={{
                                       fontSize: 11,
                                       fontWeight: 700,
-                                      color: e.status === 'PAYMENT_PENDING' ? '#ef4444' : e.status === 'QUEUED' ? '#f59e0b' : '#10b981',
+                                      color:
+                                        e.paymentStatus === 'PENDING_VERIFICATION'
+                                          ? '#ef4444'
+                                          : e.status === 'QUEUED'
+                                          ? '#10b981'
+                                          : e.status === 'PAYMENT_PENDING'
+                                          ? '#f59e0b'
+                                          : '#64748b',
                                     }}
                                   >
-                                    ● {e.status === 'PAYMENT_PENDING' ? 'High' : e.status === 'QUEUED' ? 'Medium' : 'Standard'}
+                                    ●{' '}
+                                    {e.paymentStatus === 'PENDING_VERIFICATION'
+                                      ? 'High (Verify Receipt)'
+                                      : e.status === 'QUEUED'
+                                      ? 'Ready to File'
+                                      : e.status === 'PAYMENT_PENDING'
+                                      ? 'Pending Payment'
+                                      : 'Standard'}
                                   </span>
                                 </td>
                                 <td style={{ padding: '10px 12px' }}>
@@ -2452,9 +2466,21 @@ export default function AdminDashboardPage({ onNavigate }) {
                                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#ffedd5', color: '#c2410c' }}>
                                       <Clock size={11} /> In Queue
                                     </span>
+                                  ) : e.paymentStatus === 'PENDING_VERIFICATION' ? (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                                      <Clock size={11} /> Receipt Under Review
+                                    </span>
+                                  ) : e.status === 'PAYMENT_PENDING' ? (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+                                      <Clock size={11} /> Awaiting Payment (Unpaid)
+                                    </span>
+                                  ) : e.status === 'DRAFT' ? (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                                      <Clock size={11} /> Incomplete Form
+                                    </span>
                                   ) : (
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8' }}>
-                                      <Clock size={11} /> In Review
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#f1f5f9', color: '#475569' }}>
+                                      {e.status}
                                     </span>
                                   )}
                                 </td>

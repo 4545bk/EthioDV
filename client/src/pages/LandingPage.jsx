@@ -316,7 +316,7 @@ export default function LandingPage({ onNavigate }) {
             <div className="card" style={{ padding: 20, borderRadius: 'var(--radius-md)' }}>
               <h4 style={{ fontSize: 15, marginBottom: 6, color: 'var(--text-main)', fontWeight: 700 }}>ፓስፖርት ግዴታ ነው?</h4>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                በቅርብ ዓመታት የዲቪ ህግ መሰረት ለሎተሪው ለመመዝገብ ፓስፖርት ግዴታ አይደለም። ትክክለኛ የልደት መረጃና መስፈርቱን የሚያሟላ ፎቶግራፍ ብቻ በቂ ነው።
+                አዎ፣ ፓስፖርት ያስፈልግዎታል፤ ነገር ግን ከቤተሰብዎ አባላት መካከል (የትዳር አጋር ወይም ወላጅ) አንዱ ፓስፖርት ካለው/ካላት እርሱን በመጠቀም ማመልከት ይችላሉ።
               </p>
             </div>
 

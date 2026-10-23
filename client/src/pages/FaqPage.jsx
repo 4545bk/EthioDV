@@ -31,7 +31,7 @@ export default function FaqPage({ onNavigate }) {
           <div className="sub-card">
             <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>2. ለDV-2027 ለማመልከት ፓስፖርት ያስፈልገኛል?</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              <strong>መልስ:</strong> አይያስፈልግዎትም! እ.ኤ.አ በ2022 በአሜሪካ ፌደራል ፍርድ ቤት ውሳኔ መሰረት የፓስፖርት ህግ ተሰርዟል። ስለዚህ ለDV-2024, DV-2025 እና DV-2026 ምዝገባዎች ፓስፖርት አላስፈለገም። ለDV-2027 ምዝገባም ፓስፖርት ሳይኖርዎት በልደት መረጃዎ ብቻ ማመልከት ይችላሉ።
+              <strong>መልስ:</strong> አዎ፣ ፓስፖርት ያስፈልግዎታል፤ ነገር ግን ከቤተሰብዎ አባላት መካከል (የትዳር አጋር ወይም ወላጅ) አንዱ ፓስፖርት ካለው/ካላት እርሱን በመጠቀም ማመልከት ይችላሉ። (You will need a passport, but if one of your family members has one, you can use it to apply.)
             </p>
           </div>
 
