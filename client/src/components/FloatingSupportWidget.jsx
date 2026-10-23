@@ -131,7 +131,7 @@ export default function FloatingSupportWidget({ onNavigate }) {
 
           {/* Action 2: Telegram Bot / Support Chat */}
           <a
-            href="https://t.me/DV2027EthiopiaBot"
+            href="https://t.me/DV2027EthioDv_Bot"
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -166,7 +166,7 @@ export default function FloatingSupportWidget({ onNavigate }) {
                 {isAmharic ? 'በቴሌግራም መልዕክት ላክ' : 'Chat on Telegram'}
               </strong>
               <span style={{ fontSize: 12, color: '#38bdf8', fontWeight: 600 }}>
-                @DV2027EthiopiaBot
+                @DV2027EthioDv_Bot
               </span>
             </div>
           </a>

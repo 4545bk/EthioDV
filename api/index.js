@@ -5,6 +5,7 @@ import Staff from './src/models/Staff.js';
 import Settings from './src/models/Settings.js';
 import bcrypt from 'bcryptjs';
 import { generateBase32Secret } from './src/utils/totp.js';
+import { startTelegramPolling } from './src/services/telegramBotWorker.js';
 
 // Auto-seed default staff accounts in development if not present
 async function seedDefaultAccounts() {
@@ -53,6 +54,7 @@ if (!process.env.VERCEL) {
       await seedDefaultAccounts();
       app.listen(port, () => {
         console.log(`🚀 EthioDV-FillTrack API Server listening on port ${port}`);
+        startTelegramPolling();
       });
     })
     .catch((err) => {

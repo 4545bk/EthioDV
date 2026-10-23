@@ -69,21 +69,24 @@ export async function sendTelegramAdminPhoto(photoUrl, caption, inlineKeyboard =
 /**
  * Send a direct message to a specific user via Telegram chat
  */
-export async function sendTelegramUserMessage(chatId, text) {
+export async function sendTelegramUserMessage(chatId, text, inlineKeyboard = []) {
   if (!ENV.TELEGRAM_BOT_TOKEN || !chatId) {
     console.log(`[Telegram User Mock to ${chatId}]:`, text);
     return { ok: true, mocked: true };
   }
 
   try {
+    const payload = {
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+      reply_markup: inlineKeyboard.length > 0 ? { inline_keyboard: inlineKeyboard } : undefined,
+    };
+
     const res = await fetch(`https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: 'HTML',
-      }),
+      body: JSON.stringify(payload),
     });
 
     return await res.json();
