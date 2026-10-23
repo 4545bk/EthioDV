@@ -120,40 +120,38 @@ export default function Navbar({ onNavigate, currentPage }) {
             </button>
           )}
 
-          {isStaff && (
-            <>
-              <button
-                onClick={() => onNavigate('operator')}
-                className="btn btn-secondary"
-                style={{
-                  padding: '7px 14px',
-                  fontSize: 13,
-                  borderRadius: 9999,
-                  borderColor: 'var(--primary-400)',
-                  background: currentPage === 'operator' ? 'rgba(124, 58, 237, 0.15)' : undefined,
-                }}
-              >
-                <CheckCircle2 size={14} color="#8b5cf6" />
-                {t('operatorStation')}
-              </button>
+          {user?.role === 'operator' && (
+            <button
+              onClick={() => onNavigate('operator')}
+              className="btn btn-secondary"
+              style={{
+                padding: '7px 14px',
+                fontSize: 13,
+                borderRadius: 9999,
+                borderColor: 'var(--primary-400)',
+                background: currentPage === 'operator' ? 'rgba(124, 58, 237, 0.15)' : undefined,
+              }}
+            >
+              <CheckCircle2 size={14} color="#8b5cf6" />
+              {t('operatorStation')}
+            </button>
+          )}
 
-              {user?.role === 'superadmin' && (
-                <button
-                  onClick={() => onNavigate('admin')}
-                  className="btn btn-secondary"
-                  style={{
-                    padding: '7px 14px',
-                    fontSize: 13,
-                    borderRadius: 9999,
-                    borderColor: 'var(--accent-500)',
-                    background: currentPage === 'admin' ? 'rgba(20, 184, 166, 0.15)' : undefined,
-                  }}
-                >
-                  <Shield size={14} color="#14b8a6" />
-                  {t('adminDashboard')}
-                </button>
-              )}
-            </>
+          {user?.role === 'superadmin' && (
+            <button
+              onClick={() => onNavigate('admin')}
+              className="btn btn-secondary"
+              style={{
+                padding: '7px 14px',
+                fontSize: 13,
+                borderRadius: 9999,
+                borderColor: 'var(--accent-500)',
+                background: currentPage === 'admin' ? 'rgba(20, 184, 166, 0.15)' : undefined,
+              }}
+            >
+              <Shield size={14} color="#14b8a6" />
+              {t('adminDashboard')}
+            </button>
           )}
 
           {/* Theme Toggle Button */}
@@ -290,7 +288,7 @@ export default function Navbar({ onNavigate, currentPage }) {
                       {t('photoGuide')}
                     </button>
 
-                    {isStaff && (
+                    {user?.role === 'operator' && (
                       <button
                         onClick={() => {
                           onNavigate('operator');
@@ -507,14 +505,16 @@ export default function Navbar({ onNavigate, currentPage }) {
           {isStaff && (
             <>
               <div style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />
-              <button
-                onClick={() => navigateAndClose('operator')}
-                className="mobile-nav-item"
-                style={{ background: 'rgba(124, 58, 237, 0.08)' }}
-              >
-                <CheckCircle2 size={16} color="#8b5cf6" />
-                {t('operatorStation')}
-              </button>
+              {user?.role === 'operator' && (
+                <button
+                  onClick={() => navigateAndClose('operator')}
+                  className="mobile-nav-item"
+                  style={{ background: 'rgba(124, 58, 237, 0.08)' }}
+                >
+                  <CheckCircle2 size={16} color="#8b5cf6" />
+                  {t('operatorStation')}
+                </button>
+              )}
 
               {user?.role === 'superadmin' && (
                 <button

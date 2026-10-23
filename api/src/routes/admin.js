@@ -114,6 +114,58 @@ router.get('/queue', async (req, res, next) => {
 });
 
 /**
+ * GET /api/v1/admin/queue/active
+ * Retrieves current operator's active lock (if any) without claiming new entries
+ */
+router.get('/queue/active', async (req, res, next) => {
+  try {
+    const now = new Date();
+    const activeEntry = await Entry.findOne({
+      lockedBy: req.user.id,
+      status: 'FILING_IN_PROGRESS',
+      lockExpiresAt: { $gt: now },
+    });
+
+    if (!activeEntry) {
+      return res.json({ success: true, data: { entry: null } });
+    }
+
+    const formDataDoc = await FormData.findOne({ entryId: activeEntry._id });
+    const formData = formDataDoc ? formDataDoc.getDecryptedData() : null;
+
+    if (formData?.primary?.photoKey) {
+      formData.primary.photoDownloadUrl = await getPresignedDownloadUrl(formData.primary.photoKey);
+    }
+    if (formData?.spouse?.photoKey) {
+      formData.spouse.photoDownloadUrl = await getPresignedDownloadUrl(formData.spouse.photoKey);
+    }
+    if (formData?.children) {
+      for (const child of formData.children) {
+        if (child.photoKey) {
+          child.photoDownloadUrl = await getPresignedDownloadUrl(child.photoKey);
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        entry: {
+          id: activeEntry._id,
+          uniqueReference: activeEntry.uniqueReference,
+          status: activeEntry.status,
+          paymentApprovedAt: activeEntry.paymentApprovedAt,
+          lockExpiresAt: activeEntry.lockExpiresAt,
+        },
+        formData,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/v1/admin/queue/claim-next
  * Claims the highest priority unfiled entry, locks it for 30 minutes
  */

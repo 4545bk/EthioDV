@@ -96,6 +96,7 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [filingStatusMessage, setFilingStatusMessage] = useState('');
   const [filingErrorMessage, setFilingErrorMessage] = useState('');
   const [filingTimeLeft, setFilingTimeLeft] = useState(1800); // 30 mins
+  const [isApplicantDataExpanded, setIsApplicantDataExpanded] = useState(true);
 
   // Load Real Data from Backend
   const loadDashboardData = async () => {
@@ -125,6 +126,28 @@ export default function AdminDashboardPage({ onNavigate }) {
     loadDashboardData();
   }, []);
 
+  // Check if current operator already holds an active lock without claiming someone new
+  const checkActiveFilingEntry = async () => {
+    try {
+      setFilingLoading(true);
+      setFilingErrorMessage('');
+      const res = await apiRequest('/admin/queue/active');
+      if (res.success && res.data?.entry) {
+        setActiveFilingData(res.data);
+        if (res.data.entry.lockExpiresAt) {
+          const diff = Math.floor((new Date(res.data.entry.lockExpiresAt).getTime() - Date.now()) / 1000);
+          setFilingTimeLeft(Math.max(0, diff));
+        }
+      } else {
+        setActiveFilingData(null);
+      }
+    } catch (err) {
+      console.warn('Could not check active filing lock:', err.message);
+    } finally {
+      setFilingLoading(false);
+    }
+  };
+
   // Claim next priority entry for filing
   const claimNextFilingEntry = async () => {
     try {
@@ -137,6 +160,7 @@ export default function AdminDashboardPage({ onNavigate }) {
       const res = await apiRequest('/admin/queue/claim-next', { method: 'POST' });
       if (res.success && res.data.entry) {
         setActiveFilingData(res.data);
+        setIsApplicantDataExpanded(true);
         if (res.data.entry.lockExpiresAt) {
           const diff = Math.floor((new Date(res.data.entry.lockExpiresAt).getTime() - Date.now()) / 1000);
           setFilingTimeLeft(Math.max(0, diff));
@@ -167,7 +191,7 @@ export default function AdminDashboardPage({ onNavigate }) {
     try {
       await apiRequest(`/admin/queue/release/${activeFilingData.entry.id}`, { method: 'POST' });
       setActiveFilingData(null);
-      claimNextFilingEntry();
+      setFilingStatusMessage('Lock released. Entry returned to queue.');
       loadDashboardData();
     } catch (err) {
       setFilingErrorMessage(err.message || 'Failed to release lock');
@@ -617,7 +641,7 @@ export default function AdminDashboardPage({ onNavigate }) {
             onClick={() => {
               setActiveNav('filing');
               setMobileDrawerOpen(false);
-              if (!activeFilingData) claimNextFilingEntry();
+              if (!activeFilingData) checkActiveFilingEntry();
             }}
             style={{
               width: '100%',
@@ -1262,91 +1286,160 @@ export default function AdminDashboardPage({ onNavigate }) {
                         </h3>
                       </div>
 
-                      {primaryFiling?.photoDownloadUrl && (
-                        <a
-                          href={primaryFiling.photoDownloadUrl}
-                          download={`photo_${activeFilingData.entry.uniqueReference}.jpg`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsApplicantDataExpanded((prev) => !prev)}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 6,
+                            gap: 5,
                             padding: '6px 12px',
                             borderRadius: 6,
                             border: '1px solid #cbd5e1',
                             fontSize: 11,
                             fontWeight: 700,
+                            background: '#ffffff',
                             color: '#0f172a',
-                            textDecoration: 'none',
-                            background: '#f8fafc',
+                            cursor: 'pointer',
                           }}
                         >
-                          <Download size={12} /> Download Photo
-                        </a>
-                      )}
-                    </div>
+                          {isApplicantDataExpanded ? (
+                            <>
+                              <ChevronDown size={14} /> Collapse Entrant Data
+                            </>
+                          ) : (
+                            <>
+                              <ChevronRight size={14} /> Expand Entrant Data
+                            </>
+                          )}
+                        </button>
 
-                    {/* Applicant Photo */}
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-                      <div style={{ width: 90, height: 90, borderRadius: 8, overflow: 'hidden', border: '2px solid #10b981', background: '#ffffff', flexShrink: 0 }}>
-                        {primaryFiling?.photoDownloadUrl ? (
-                          <img src={primaryFiling.photoDownloadUrl} alt="Entrant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>No Photo</div>
+                        {primaryFiling?.photoDownloadUrl && (
+                          <a
+                            href={primaryFiling.photoDownloadUrl}
+                            download={`photo_${activeFilingData.entry.uniqueReference}.jpg`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              borderRadius: 6,
+                              border: '1px solid #cbd5e1',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: '#0f172a',
+                              textDecoration: 'none',
+                              background: '#f8fafc',
+                            }}
+                          >
+                            <Download size={12} /> Download Photo
+                          </a>
                         )}
                       </div>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                          <CheckCircle2 size={13} /> 600×600 px Validated Photo
-                        </div>
-                        <div style={{ fontSize: 11, color: '#64748b' }}>
-                          Ready for official state department submission.
-                        </div>
-                      </div>
                     </div>
 
-                    {/* Copyable Fields */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {[
-                        { label: '1. Last Name', val: primaryFiling?.name?.lastName },
-                        { label: '2. First Name', val: primaryFiling?.name?.firstName },
-                        { label: '3. Middle Name', val: primaryFiling?.name?.middleName || 'No Middle Name' },
-                        { label: '4. Gender', val: primaryFiling?.gender === 'M' ? 'Male' : 'Female' },
-                        {
-                          label: '5. Birth Date',
-                          val: primaryFiling?.birthDate ? `${primaryFiling.birthDate.month}/${primaryFiling.birthDate.day}/${primaryFiling.birthDate.year}` : 'N/A',
-                        },
-                        { label: '6. Birth City', val: primaryFiling?.birthCity || 'Addis Ababa' },
-                        { label: '7. Birth Country', val: primaryFiling?.birthCountry || 'Ethiopia' },
-                        { label: '8. Country of Eligibility', val: primaryFiling?.eligibilityCountry || 'Ethiopia' },
-                        { label: '9. Address', val: primaryFiling?.mailingAddress?.addressLine1 || primaryFiling?.mailingAddress || 'Addis Ababa' },
-                        { label: '10. Phone', val: primaryFiling?.phone || 'N/A' },
-                        { label: '11. Email', val: primaryFiling?.email || 'N/A' },
-                        { label: '12. Education Level', val: primaryFiling?.educationLevel || 'N/A' },
-                        { label: '13. Marital Status', val: primaryFiling?.maritalStatus || 'UNMARRIED' },
-                        { label: '14. Number of Children', val: String(primaryFiling?.childrenCount ?? 0) },
-                      ].map((f, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '7px 10px',
-                            background: '#f8fafc',
-                            borderRadius: 6,
-                            border: '1px solid #f1f5f9',
-                          }}
-                        >
-                          <div style={{ minWidth: 0, paddingRight: 8 }}>
-                            <div style={{ fontSize: 10, color: '#64748b' }}>{f.label}</div>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', wordBreak: 'break-word' }}>{f.val}</div>
+                    {!isApplicantDataExpanded ? (
+                      <div
+                        style={{
+                          padding: '12px 14px',
+                          background: '#f8fafc',
+                          borderRadius: 8,
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: 10,
+                          fontSize: 12,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 6, overflow: 'hidden', border: '1px solid #cbd5e1', background: '#ffffff', flexShrink: 0 }}>
+                            {primaryFiling?.photoDownloadUrl ? (
+                              <img src={primaryFiling.photoDownloadUrl} alt="Entrant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>N/A</div>
+                            )}
                           </div>
-                          <CopyButton text={f.val} label={f.label} />
+                          <span style={{ color: '#64748b' }}>
+                            Entrant: <strong style={{ color: '#0f172a' }}>{primaryFiling?.name?.firstName} {primaryFiling?.name?.lastName}</strong> ({primaryFiling?.gender === 'M' ? 'Male' : 'Female'}) • {primaryFiling?.birthCountry || 'Ethiopia'}
+                          </span>
                         </div>
-                      ))}
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsApplicantDataExpanded(true)}
+                          style={{ border: 'none', background: 'none', color: '#4f46e5', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}
+                        >
+                          Show full 14 form fields →
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Applicant Photo */}
+                        <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                          <div style={{ width: 90, height: 90, borderRadius: 8, overflow: 'hidden', border: '2px solid #10b981', background: '#ffffff', flexShrink: 0 }}>
+                            {primaryFiling?.photoDownloadUrl ? (
+                              <img src={primaryFiling.photoDownloadUrl} alt="Entrant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>No Photo</div>
+                            )}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                              <CheckCircle2 size={13} /> 600×600 px Validated Photo
+                            </div>
+                            <div style={{ fontSize: 11, color: '#64748b' }}>
+                              Ready for official state department submission.
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Copyable Fields */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {[
+                            { label: '1. Last Name', val: primaryFiling?.name?.lastName },
+                            { label: '2. First Name', val: primaryFiling?.name?.firstName },
+                            { label: '3. Middle Name', val: primaryFiling?.name?.middleName || 'No Middle Name' },
+                            { label: '4. Gender', val: primaryFiling?.gender === 'M' ? 'Male' : 'Female' },
+                            {
+                              label: '5. Birth Date',
+                              val: primaryFiling?.birthDate ? `${primaryFiling.birthDate.month}/${primaryFiling.birthDate.day}/${primaryFiling.birthDate.year}` : 'N/A',
+                            },
+                            { label: '6. Birth City', val: primaryFiling?.birthCity || 'Addis Ababa' },
+                            { label: '7. Birth Country', val: primaryFiling?.birthCountry || 'Ethiopia' },
+                            { label: '8. Country of Eligibility', val: primaryFiling?.eligibilityCountry || 'Ethiopia' },
+                            { label: '9. Address', val: primaryFiling?.mailingAddress?.addressLine1 || primaryFiling?.mailingAddress || 'Addis Ababa' },
+                            { label: '10. Phone', val: primaryFiling?.phone || 'N/A' },
+                            { label: '11. Email', val: primaryFiling?.email || 'N/A' },
+                            { label: '12. Education Level', val: primaryFiling?.educationLevel || 'N/A' },
+                            { label: '13. Marital Status', val: primaryFiling?.maritalStatus || 'UNMARRIED' },
+                            { label: '14. Number of Children', val: String(primaryFiling?.childrenCount ?? 0) },
+                          ].map((f, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '7px 10px',
+                                background: '#f8fafc',
+                                borderRadius: 6,
+                                border: '1px solid #f1f5f9',
+                              }}
+                            >
+                              <div style={{ minWidth: 0, paddingRight: 8 }}>
+                                <div style={{ fontSize: 10, color: '#64748b' }}>{f.label}</div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', wordBreak: 'break-word' }}>{f.val}</div>
+                              </div>
+                              <CopyButton text={f.val} label={f.label} />
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Right Column: Complete Official Filing Card */}
