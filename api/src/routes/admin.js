@@ -553,24 +553,45 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
     const grossRevenueCents = approvedPayments.reduce((acc, p) => acc + (p.amountETBCents || 0), 0);
     const grossRevenueETB = grossRevenueCents / 100;
 
-    // 2. Counts
+    // 2. Counts (Real Database Queries)
     const totalUsers = await User.countDocuments();
+    const totalApplications = await Entry.countDocuments();
     const totalDrafts = await Entry.countDocuments({ status: 'DRAFT' });
     const totalSubmitted = await Entry.countDocuments({ status: { $ne: 'DRAFT' } });
+    const totalPendingPayment = await Entry.countDocuments({ status: 'PAYMENT_PENDING' });
     const totalPaid = approvedPayments.length;
     const totalFiled = await Entry.countDocuments({ status: { $in: ['FILED', 'CONFIRMED'] } });
-    const totalQueued = await Entry.countDocuments({ status: 'QUEUED' });
+    const totalQueued = await Entry.countDocuments({ status: { $in: ['QUEUED', 'FILING_IN_PROGRESS'] } });
 
-    // 3. Refunds
+    // 3. Real 7-Day Volume Trend (Past 7 days)
+    const daysName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const recentWeekEntries = await Entry.find({ createdAt: { $gte: sevenDaysAgo } });
+
+    const volumeByDayMap = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
+    recentWeekEntries.forEach((e) => {
+      const d = daysName[new Date(e.createdAt).getDay()];
+      volumeByDayMap[d] = (volumeByDayMap[d] || 0) + 1;
+    });
+
+    const volumeByDay = daysName.map((d) => ({
+      day: d,
+      count: volumeByDayMap[d],
+    }));
+
+    // 4. Refunds
     const processedRefunds = await Refund.find({ status: 'PROCESSED' });
     const totalRefundsCents = processedRefunds.reduce((acc, r) => acc + (r.requestedAmountCents || 0), 0);
     const totalRefundsETB = totalRefundsCents / 100;
 
-    // 4. Filing Direct Costs (USD fee modeled in ETB)
+    // 5. Filing Direct Costs (USD fee modeled in ETB)
     const directFilingCostETB = totalFiled * (settings.usdFilingFeePerEntry || 0) * (settings.usdToEtbExchangeRate || 125);
 
-    // 5. Net Profit
+    // 6. Net Profit
     const netProfitETB = grossRevenueETB - (directFilingCostETB + totalRefundsETB);
+
+    const paidConversionRate = totalUsers > 0 ? ((totalPaid / totalUsers) * 100).toFixed(1) + '%' : '0%';
 
     return res.json({
       success: true,
@@ -584,18 +605,22 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
         },
         counts: {
           totalUsers,
+          totalApplications,
           totalDrafts,
           totalSubmitted,
+          totalPendingPayment,
           totalPaid,
           totalQueued,
           totalFiled,
         },
+        volumeByDay,
+        recentWeekCount: recentWeekEntries.length,
         funnel: {
           step1_registered: totalUsers,
           step2_submittedForm: totalSubmitted,
           step3_paymentApproved: totalPaid,
           step4_officiallyFiled: totalFiled,
-          conversionRateOverall: totalUsers > 0 ? ((totalFiled / totalUsers) * 100).toFixed(1) + '%' : '0%',
+          conversionRateOverall: paidConversionRate,
         },
       },
     });
