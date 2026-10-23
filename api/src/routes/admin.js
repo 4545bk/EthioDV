@@ -739,4 +739,378 @@ router.post('/reminders/send-unpaid-reminders', requireSuperAdmin, async (req, r
   }
 });
 
+// ==================== ENTRIES MANAGEMENT & FULL FORM DATA ====================
+
+/**
+ * GET /api/v1/admin/entries
+ * List all applications with filtering, search, and pagination
+ */
+router.get('/entries', async (req, res, next) => {
+  try {
+    const { status, search, page = 1, limit = 50 } = req.query;
+    const query = {};
+
+    if (status && status !== 'ALL') {
+      query.status = status;
+    }
+
+    if (search) {
+      query.uniqueReference = { $regex: search.trim(), $options: 'i' };
+    }
+
+    const total = await Entry.countDocuments(query);
+    const entries = await Entry.find(query)
+      .sort({ createdAt: -1 })
+      .skip((parseInt(page, 10) - 1) * parseInt(limit, 10))
+      .limit(parseInt(limit, 10))
+      .populate('userId', 'email fullName telegramUsername')
+      .populate('lockedBy', 'username');
+
+    const list = await Promise.all(
+      entries.map(async (e) => {
+        const formData = await FormData.findOne({ entryId: e._id });
+        const payment = await Payment.findOne({ entryId: e._id }).sort({ createdAt: -1 });
+        const primary = formData?.primary;
+
+        let primaryPhotoUrl = null;
+        if (primary?.photoKey) {
+          try {
+            primaryPhotoUrl = await getPresignedDownloadUrl(primary.photoKey);
+          } catch (err) {
+            // ignore
+          }
+        }
+
+        return {
+          id: e._id,
+          uniqueReference: e.uniqueReference,
+          status: e.status,
+          applicantName: primary?.name
+            ? `${primary.name.firstName || ''} ${primary.name.lastName || ''}`.trim()
+            : (e.userId?.fullName || 'N/A'),
+          applicantEmail: primary?.email || e.userId?.email || 'N/A',
+          gender: primary?.gender || 'N/A',
+          birthDate: primary?.birthDate || null,
+          education: primary?.educationLevel || 'N/A',
+          maritalStatus: primary?.maritalStatus || 'UNMARRIED',
+          childrenCount: primary?.childrenCount || 0,
+          paymentStatus: payment?.status || 'UNPAID',
+          paymentAmountETB: payment?.displayAmountETB || 0,
+          paymentProvider: payment?.provider || null,
+          claimedTransactionCode: payment?.claimedTransactionCode || null,
+          primaryPhotoUrl,
+          confirmationNumber: e.getConfirmationNumber ? e.getConfirmationNumber() : null,
+          paymentApprovedAt: e.paymentApprovedAt,
+          filedAt: e.filedAt,
+          createdAt: e.createdAt,
+        };
+      })
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        total,
+        page: parseInt(page, 10),
+        totalPages: Math.ceil(total / parseInt(limit, 10)),
+        entries: list,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/v1/admin/entries/:entryId/full-data
+ * Fetch decrypted form data and presigned download URLs for all photos
+ */
+router.get('/entries/:entryId/full-data', async (req, res, next) => {
+  try {
+    const entry = await Entry.findById(req.params.entryId).populate('userId', 'email fullName telegramUsername');
+    if (!entry) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry not found' } });
+    }
+
+    const formDataDoc = await FormData.findOne({ entryId: entry._id });
+    const formData = formDataDoc ? formDataDoc.getDecryptedData() : null;
+
+    const photos = [];
+
+    if (formData?.primary?.photoKey) {
+      try {
+        const url = await getPresignedDownloadUrl(formData.primary.photoKey);
+        formData.primary.photoDownloadUrl = url;
+        photos.push({
+          role: 'Primary Applicant',
+          name: `${formData.primary.name?.firstName || ''} ${formData.primary.name?.lastName || ''}`.trim(),
+          photoUrl: url,
+          filename: `photo_primary_${entry.uniqueReference}.jpg`,
+        });
+      } catch (e) {
+        console.warn('Presigned URL error for primary photo:', e.message);
+      }
+    }
+
+    if (formData?.spouse?.photoKey) {
+      try {
+        const url = await getPresignedDownloadUrl(formData.spouse.photoKey);
+        formData.spouse.photoDownloadUrl = url;
+        photos.push({
+          role: 'Spouse',
+          name: `${formData.spouse.name?.firstName || ''} ${formData.spouse.name?.lastName || ''}`.trim(),
+          photoUrl: url,
+          filename: `photo_spouse_${entry.uniqueReference}.jpg`,
+        });
+      } catch (e) {
+        console.warn('Presigned URL error for spouse photo:', e.message);
+      }
+    }
+
+    if (formData?.children && Array.isArray(formData.children)) {
+      for (let i = 0; i < formData.children.length; i++) {
+        const child = formData.children[i];
+        if (child.photoKey) {
+          try {
+            const url = await getPresignedDownloadUrl(child.photoKey);
+            child.photoDownloadUrl = url;
+            photos.push({
+              role: `Child #${i + 1}`,
+              name: `${child.name?.firstName || ''} ${child.name?.lastName || ''}`.trim(),
+              photoUrl: url,
+              filename: `photo_child_${i + 1}_${entry.uniqueReference}.jpg`,
+            });
+          } catch (e) {
+            console.warn(`Presigned URL error for child ${i + 1} photo:`, e.message);
+          }
+        }
+      }
+    }
+
+    const payment = await Payment.findOne({ entryId: entry._id }).sort({ createdAt: -1 });
+
+    return res.json({
+      success: true,
+      data: {
+        entry: {
+          id: entry._id,
+          uniqueReference: entry.uniqueReference,
+          status: entry.status,
+          confirmationNumber: entry.getConfirmationNumber ? entry.getConfirmationNumber() : null,
+          officialSubmissionScreenshotKey: entry.officialSubmissionScreenshotKey,
+          paymentApprovedAt: entry.paymentApprovedAt,
+          filedAt: entry.filedAt,
+          createdAt: entry.createdAt,
+          user: entry.userId,
+        },
+        formData,
+        payment,
+        photos,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/v1/admin/entries/:entryId
+ * Delete entry and associated form data & payments
+ */
+router.delete('/entries/:entryId', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const entry = await Entry.findById(req.params.entryId);
+    if (!entry) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry not found' } });
+    }
+
+    await FormData.deleteMany({ entryId: entry._id });
+    await Payment.deleteMany({ entryId: entry._id });
+    await Entry.findByIdAndDelete(entry._id);
+
+    await recordAudit(req, {
+      action: 'DELETE_ENTRY',
+      targetEntity: 'Entry',
+      targetId: entry._id,
+      metadata: { uniqueReference: entry.uniqueReference },
+    });
+
+    return res.json({
+      success: true,
+      data: { message: `Entry #${entry.uniqueReference} deleted successfully.` },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ==================== USERS & CLIENTS MANAGEMENT ====================
+
+/**
+ * GET /api/v1/admin/users
+ * Super Admin list all registered users with normal vs paid status, joined timestamp, and search
+ */
+router.get('/users', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { search, type, page = 1, limit = 50 } = req.query;
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { email: { $regex: search.trim(), $options: 'i' } },
+        { fullName: { $regex: search.trim(), $options: 'i' } },
+        { telegramUsername: { $regex: search.trim(), $options: 'i' } },
+      ];
+    }
+
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .sort({ createdAt: -1 })
+      .skip((parseInt(page, 10) - 1) * parseInt(limit, 10))
+      .limit(parseInt(limit, 10));
+
+    const list = await Promise.all(
+      users.map(async (u) => {
+        const entries = await Entry.find({ userId: u._id }).sort({ createdAt: -1 });
+        const hasApprovedPayment = await Payment.exists({ userId: u._id, status: 'APPROVED' });
+        const hasPaidEntry = entries.some((e) =>
+          ['QUEUED', 'FILING_IN_PROGRESS', 'CONFIRMED', 'FILED'].includes(e.status)
+        );
+        const isPaid = !!(hasApprovedPayment || hasPaidEntry);
+
+        return {
+          id: u._id,
+          email: u.email || 'N/A',
+          fullName: u.fullName || 'N/A',
+          telegramUsername: u.telegramUsername || null,
+          authProvider: u.authProvider,
+          userType: isPaid ? 'PAID' : 'NORMAL',
+          isPaid,
+          createdAt: u.createdAt,
+          lastLoginAt: u.lastLoginAt || u.updatedAt,
+          entriesCount: entries.length,
+          entries: entries.map((e) => ({
+            id: e._id,
+            uniqueReference: e.uniqueReference,
+            status: e.status,
+            createdAt: e.createdAt,
+          })),
+        };
+      })
+    );
+
+    let filteredList = list;
+    if (type === 'PAID') {
+      filteredList = list.filter((u) => u.isPaid);
+    } else if (type === 'NORMAL') {
+      filteredList = list.filter((u) => !u.isPaid);
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        total,
+        page: parseInt(page, 10),
+        totalPages: Math.ceil(total / parseInt(limit, 10)),
+        users: filteredList,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/v1/admin/users/:userId
+ * Super Admin deletes a user and associated data
+ */
+router.delete('/users/:userId', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' } });
+    }
+
+    const userEntries = await Entry.find({ userId: user._id });
+    const entryIds = userEntries.map((e) => e._id);
+
+    await FormData.deleteMany({ entryId: { $in: entryIds } });
+    await Payment.deleteMany({ userId: user._id });
+    await Entry.deleteMany({ userId: user._id });
+    await User.findByIdAndDelete(user._id);
+
+    await recordAudit(req, {
+      action: 'DELETE_USER',
+      targetEntity: 'User',
+      targetId: user._id,
+      metadata: { email: user.email, telegramUsername: user.telegramUsername },
+    });
+
+    return res.json({
+      success: true,
+      data: { message: `User ${user.email || user.telegramUsername || user._id} deleted successfully.` },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/v1/admin/recent-activity
+ * Returns latest live updates (today, yesterday, this week)
+ */
+router.get('/recent-activity', async (req, res, next) => {
+  try {
+    const [recentPayments, recentEntries, recentUsers] = await Promise.all([
+      Payment.find().sort({ createdAt: -1 }).limit(10).populate('userId', 'email fullName'),
+      Entry.find().sort({ createdAt: -1 }).limit(10).populate('userId', 'email fullName'),
+      User.find().sort({ createdAt: -1 }).limit(10),
+    ]);
+
+    const activities = [];
+
+    recentPayments.forEach((p) => {
+      activities.push({
+        id: `pay_${p._id}`,
+        type: 'PAYMENT',
+        title: p.status === 'APPROVED' ? 'Payment Approved' : 'Payment Submitted',
+        description: `${p.claimedTransactionCode || 'Tx'} • ${p.displayAmountETB || 1000} ETB (${p.provider})`,
+        timestamp: p.createdAt,
+        badge: p.status,
+      });
+    });
+
+    recentEntries.forEach((e) => {
+      activities.push({
+        id: `ent_${e._id}`,
+        type: 'ENTRY',
+        title: e.status === 'CONFIRMED' ? 'Entry Confirmed & Filed' : 'Application Created',
+        description: `Ref #${e.uniqueReference} • ${e.userId?.email || 'Applicant'}`,
+        timestamp: e.createdAt,
+        badge: e.status,
+      });
+    });
+
+    recentUsers.forEach((u) => {
+      activities.push({
+        id: `user_${u._id}`,
+        type: 'USER',
+        title: 'New Client Registered',
+        description: `${u.email || u.telegramUsername || 'Applicant'} joined`,
+        timestamp: u.createdAt,
+        badge: 'NEW',
+      });
+    });
+
+    activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return res.json({
+      success: true,
+      data: activities.slice(0, 15),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

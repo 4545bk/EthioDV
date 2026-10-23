@@ -102,6 +102,14 @@ function AppContent() {
     }
   };
 
+  if (currentPage === 'admin') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        <AdminDashboardPage onNavigate={navigateTo} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Mandatory US Government disclaimer on every page */}
