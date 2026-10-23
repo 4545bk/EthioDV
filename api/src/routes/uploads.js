@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
-import { getPresignedUploadUrl, getStorageProvider, uploadBufferToCloudinary } from '../services/storage.js';
+import { getPresignedUploadUrl, getStorageProvider, uploadBufferToCloudinary, getPresignedDownloadUrl } from '../services/storage.js';
+import { validatePhotoBiometrics } from '../services/photoBiometricValidator.js';
 
 const router = express.Router();
 
@@ -46,6 +47,45 @@ router.post('/presign', optionalAuth, async (req, res, next) => {
         fileKey,
         isLocalMock,
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/v1/uploads/validate-photo-biometrics
+ * Automated AI Biometric Pre-Check Gatekeeper
+ * Strictly checks for glasses, non-white backgrounds, shadows, tilt, and head ratios
+ */
+router.post('/validate-photo-biometrics', optionalAuth, async (req, res, next) => {
+  try {
+    const { imageBase64, mimeType, fileKey } = req.body;
+
+    let targetData = imageBase64;
+    let targetMime = mimeType || 'image/jpeg';
+
+    if (!targetData && fileKey) {
+      const downloadUrl = await getPresignedDownloadUrl(fileKey);
+      if (downloadUrl) {
+        const fetched = await fetch(downloadUrl);
+        const arrayBuf = await fetched.arrayBuffer();
+        targetData = Buffer.from(arrayBuf);
+      }
+    }
+
+    if (!targetData) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'MISSING_IMAGE', message: 'Photo image data is required for biometric validation.' },
+      });
+    }
+
+    const biometricResult = await validatePhotoBiometrics(targetData, targetMime);
+
+    return res.json({
+      success: true,
+      data: biometricResult,
     });
   } catch (err) {
     next(err);

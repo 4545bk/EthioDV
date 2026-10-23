@@ -4,7 +4,8 @@ import { ENV } from '../config/env.js';
  * Send an alert message to the Admin Telegram channel/group
  */
 export async function sendTelegramAdminAlert(text, inlineKeyboard = []) {
-  if (!ENV.TELEGRAM_BOT_TOKEN || !ENV.TELEGRAM_ADMIN_CHAT_ID) {
+  const adminBotToken = ENV.TELEGRAM_ADMIN_BOT_TOKEN || ENV.TELEGRAM_BOT_TOKEN;
+  if (!adminBotToken || !ENV.TELEGRAM_ADMIN_CHAT_ID) {
     console.log('[Telegram Admin Alert Mock]:', text);
     return { ok: true, mocked: true };
   }
@@ -17,7 +18,7 @@ export async function sendTelegramAdminAlert(text, inlineKeyboard = []) {
       reply_markup: inlineKeyboard.length > 0 ? { inline_keyboard: inlineKeyboard } : undefined,
     };
 
-    const res = await fetch(`https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${adminBotToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -34,7 +35,8 @@ export async function sendTelegramAdminAlert(text, inlineKeyboard = []) {
  * Send a notification photo to the Admin Telegram channel
  */
 export async function sendTelegramAdminPhoto(photoUrl, caption, inlineKeyboard = []) {
-  if (!ENV.TELEGRAM_BOT_TOKEN || !ENV.TELEGRAM_ADMIN_CHAT_ID) {
+  const adminBotToken = ENV.TELEGRAM_ADMIN_BOT_TOKEN || ENV.TELEGRAM_BOT_TOKEN;
+  if (!adminBotToken || !ENV.TELEGRAM_ADMIN_CHAT_ID) {
     console.log('[Telegram Admin Photo Mock]:', photoUrl, caption);
     return { ok: true, mocked: true };
   }
@@ -48,7 +50,7 @@ export async function sendTelegramAdminPhoto(photoUrl, caption, inlineKeyboard =
       reply_markup: inlineKeyboard.length > 0 ? { inline_keyboard: inlineKeyboard } : undefined,
     };
 
-    const res = await fetch(`https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+    const res = await fetch(`https://api.telegram.org/bot${adminBotToken}/sendPhoto`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
