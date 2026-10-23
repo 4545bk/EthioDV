@@ -5,6 +5,8 @@ import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import DisclaimerBanner from './components/DisclaimerBanner.jsx';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
+import SocialProofToast from './components/SocialProofToast.jsx';
+import UnpaidReminderBanner from './components/UnpaidReminderBanner.jsx';
 
 // Pages
 import LandingPage from './pages/LandingPage.jsx';
@@ -105,9 +107,15 @@ function AppContent() {
 
       <Navbar onNavigate={navigateTo} currentPage={currentPage} />
 
+      {/* Persistent reminder banner for logged-in users with unpaid applications */}
+      <UnpaidReminderBanner onNavigate={navigateTo} currentPage={currentPage} />
+
       <main className="main-content">
         {renderPage()}
       </main>
+
+      {/* Subtle, live entrant activity toast */}
+      <SocialProofToast />
 
       <Footer onNavigate={navigateTo} />
     </div>

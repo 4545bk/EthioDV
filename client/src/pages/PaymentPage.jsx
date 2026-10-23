@@ -3,13 +3,14 @@ import { useLanguage } from '../i18n/index.jsx';
 import { apiRequest, uploadFileDirect } from '../services/api.js';
 import CopyButton from '../components/CopyButton.jsx';
 import Alert from '../components/Alert.jsx';
-import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall, Clock } from 'lucide-react';
+import { CreditCard, Upload, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, AlertTriangle, Phone, PhoneCall, Clock, User, Zap, ShieldCheck } from 'lucide-react';
 
 export default function PaymentPage({ onNavigate, entryId }) {
   const { t } = useLanguage();
 
   const [settings, setSettings] = useState(null);
   const [entry, setEntry] = useState(null);
+  const [formData, setFormData] = useState(null);
   const [provider, setProvider] = useState('TELEBIRR');
   const [transactionCode, setTransactionCode] = useState('');
   const [senderName, setSenderName] = useState('');
@@ -36,6 +37,9 @@ export default function PaymentPage({ onNavigate, entryId }) {
         if (res.success && res.data?.entry) {
           const loadedEntry = res.data.entry;
           setEntry(loadedEntry);
+          if (res.data.formData) {
+            setFormData(res.data.formData);
+          }
           // If already verified or in queue, take directly to status tracker
           if (['QUEUED', 'FILING_IN_PROGRESS', 'FILED', 'CONFIRMED'].includes(loadedEntry.status)) {
             onNavigate('tracker', { entryId });
@@ -168,12 +172,109 @@ export default function PaymentPage({ onNavigate, entryId }) {
       </button>
 
       <div className="card payment-card" style={{ borderRadius: 'var(--radius-lg)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <span className="badge badge-primary" style={{ marginBottom: 12, padding: '5px 14px', fontSize: 12 }}>
             ደረጃ 2: ክፍያ / Step 2: Payment
           </span>
           <h2 style={{ fontSize: 26, marginBottom: 8 }}>{t('paymentTitle')}</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{t('paymentDesc')}</p>
+        </div>
+
+        {/* Applicant Verification Summary Card (Shows their uploaded photo & name) */}
+        {entry && (
+          <div
+            className="card animate-fade-in"
+            style={{
+              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.07), rgba(16, 185, 129, 0.07))',
+              border: '1.5px solid rgba(124, 58, 237, 0.25)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px 20px',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 14,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {formData?.primary?.photoDownloadUrl ? (
+                <img
+                  src={formData.primary.photoDownloadUrl}
+                  alt="Applicant preview"
+                  style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 10,
+                    objectFit: 'cover',
+                    border: '2px solid #10b981',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 10,
+                    background: 'rgba(124, 58, 237, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <User size={26} color="var(--primary-600)" />
+                </div>
+              )}
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: 16, color: 'var(--text-main)', fontWeight: 700 }}>
+                    {formData?.primary?.name?.firstName
+                      ? `${formData.primary.name.firstName} ${formData.primary.name.lastName || ''}`
+                      : 'Applicant'}
+                  </strong>
+                  <span className="badge badge-success" style={{ fontSize: 11, padding: '2px 8px' }}>
+                    ✓ ፎቶ ተረጋግጧል (Photo Ready)
+                  </span>
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>
+                  መለያ / Ref: <strong style={{ color: 'var(--primary-600)', fontFamily: 'monospace' }}>#{entry.uniqueReference}</strong> • ቅጹ 100% ተጠናቋል
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 12, color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={16} color="#10b981" />
+              <span>ቅድመ-ተራ ዝግጁ ነው / Ready for Queue</span>
+            </div>
+          </div>
+        )}
+
+        {/* Why Pre-Register Now Before Lottery Opens Banner */}
+        <div
+          className="sub-card"
+          style={{
+            background: 'rgba(124, 58, 237, 0.04)',
+            border: '1px solid rgba(124, 58, 237, 0.2)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px 18px',
+            marginBottom: 22,
+          }}
+        >
+          <strong style={{ fontSize: 14, color: 'var(--primary-600)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontWeight: 700 }}>
+            <Zap size={16} /> ለምን አሁኑኑ ቅድመ-ምዝገባ ማድረግ ያስፈልጋል? (Why Pre-Register Now?)
+          </strong>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <li>
+              <strong>የአሜሪካ ድረ-ገጽ እንዳይጨናነቅብዎት (Avoid Server Crashes):</strong> በየዓመቱ የዲቪ ድረ-ገጽ ሲከፈት በሚሊዮን የሚቆጠሩ ሰዎች በአንድ ጊዜ ስለሚገቡ ድረ-ገጹ ይጨናነቃል (504 Error)። አሁኑኑ ተራ ያስያዙ አመልካቾች ፖርታሉ እንደተከፈተ በመጀመሪያው ሰዓት ያለ መጨናነቅ ማመልከቻቸው ይገባል።
+            </li>
+            <li>
+              <strong>የተረጋገጠ ቅድሚያ ተራ (Guaranteed Batch #1 Submission):</strong> ማመልከቻዎ አስቀድሞ በባለሙያዎች ተዘጋጅቶ በቅድሚያ ሰልፍ ውስጥ ይቀመጣል።
+            </li>
+          </ul>
         </div>
 
         {/* Customer Service Help Call Banner */}

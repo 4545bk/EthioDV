@@ -82,6 +82,42 @@ export default function LandingPage({ onNavigate }) {
               {t('trackQueue')}
             </button>
           </form>
+
+          {/* Strategy B: Trust & Pre-Registration Milestone Counters */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 16,
+              maxWidth: 760,
+              margin: '36px auto 0 auto',
+              textAlign: 'center',
+            }}
+          >
+            <div className="card" style={{ padding: '16px 14px', borderRadius: 14 }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#10b981', lineHeight: 1 }}>100%</div>
+              <strong style={{ fontSize: 13, color: 'var(--text-main)', display: 'block', margin: '4px 0 2px 0' }}>
+                የፎቶ ጥራት ዋስትና
+              </strong>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>600x600 ፒክሰል መስፈርት ያሟላ</span>
+            </div>
+
+            <div className="card" style={{ padding: '16px 14px', borderRadius: 14 }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--primary-600)', lineHeight: 1 }}>Batch #1</div>
+              <strong style={{ fontSize: 13, color: 'var(--text-main)', display: 'block', margin: '4px 0 2px 0' }}>
+                የቅድሚያ ሰልፍ (Priority Queue)
+              </strong>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>ድረ-ገጹ እንደተከፈተ በመጀመሪያው ሰዓት</span>
+            </div>
+
+            <div className="card" style={{ padding: '16px 14px', borderRadius: 14 }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#38bdf8', lineHeight: 1 }}>90%</div>
+              <strong style={{ fontSize: 13, color: 'var(--text-main)', display: 'block', margin: '4px 0 2px 0' }}>
+                የተመላሽ ገንዘብ ዋስትና
+              </strong>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>ማመልከቻው ሳይገባ ቢቀር ወዲያውኑ ተመላሽ</span>
+            </div>
+          </div>
         </div>
       </section>
 

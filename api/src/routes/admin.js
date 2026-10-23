@@ -18,7 +18,7 @@ import {
   notifyAdminDepositRejected,
   notifyAdminEntryFiled,
 } from '../services/telegram.js';
-import { sendConfirmationEmail } from '../services/email.js';
+import { sendConfirmationEmail, sendUnpaidReminderEmail } from '../services/email.js';
 
 const router = express.Router();
 
@@ -673,6 +673,65 @@ router.post('/telegram-report', requireSuperAdmin, async (req, res, next) => {
       data: {
         message: 'Executive daily report dispatched to Telegram channel.',
         telegramResult: tgRes,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/v1/admin/reminders/send-unpaid-reminders
+ * Dispatch email and Telegram reminder to all applicants who haven't completed payment
+ */
+router.post('/reminders/send-unpaid-reminders', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const unpaidEntries = await Entry.find({ status: 'PAYMENT_PENDING' }).populate('userId');
+
+    let emailSent = 0;
+    let telegramSent = 0;
+
+    for (const entry of unpaidEntries) {
+      const user = entry.userId;
+      if (!user) continue;
+
+      const formData = await FormData.findOne({ entryId: entry._id });
+      const applicantName = formData?.primary?.name
+        ? `${formData.primary.name.firstName || ''} ${formData.primary.name.lastName || ''}`.trim()
+        : (user.fullName || user.email || 'Applicant');
+
+      // 1. Send Email reminder if user has email
+      if (user.email) {
+        try {
+          const emailRes = await sendUnpaidReminderEmail(user.email, {
+            applicantName,
+            entryRef: entry.uniqueReference,
+          });
+          if (emailRes.success) emailSent++;
+        } catch (emErr) {
+          console.warn(`Email reminder failed for ${user.email}:`, emErr.message);
+        }
+      }
+
+      // 2. Send Telegram reminder if user linked Telegram bot
+      if (user.telegramChatId) {
+        try {
+          const tgText = `👋 <b>ሰላም ${applicantName}!</b>\n\nየDV-2027 ማመልከቻዎ (#${entry.uniqueReference}) 90% ተሞልቶ ተቀምጧል።\n\nየቅድመ-ምዝገባ ተራዎን (Priority Queue) አሁኑኑ በማስያዝ የሎተሪው ድረ-ገጽ እንደተከፈተ በመጀመሪያው ሰዓት እንዲገባ ያድርጉ።\n\n🌐 <a href="https://ethiodv-rho.vercel.app/">ክፍያውን አጠናቅቅ (1,000 ETB)</a>\n📞 ጥያቄ ካለዎት: 0949478933`;
+          const tgRes = await sendTelegramUserMessage(user.telegramChatId, tgText);
+          if (tgRes.ok) telegramSent++;
+        } catch (tgErr) {
+          console.warn(`Telegram reminder failed for ${user.telegramChatId}:`, tgErr.message);
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        totalUnpaidChecked: unpaidEntries.length,
+        emailSent,
+        telegramSent,
+        message: `Reminders dispatched successfully! (${emailSent} emails, ${telegramSent} Telegram messages)`,
       },
     });
   } catch (err) {

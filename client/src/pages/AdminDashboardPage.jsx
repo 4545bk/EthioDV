@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../services/api.js';
 import Alert from '../components/Alert.jsx';
-import { Shield, DollarSign, Users, CheckCircle, XCircle, TrendingUp, Key, ExternalLink, Send, Sparkles, AlertTriangle, X } from 'lucide-react';
+import { Shield, DollarSign, Users, CheckCircle, XCircle, TrendingUp, Key, ExternalLink, Send, Sparkles, AlertTriangle, X, Bell } from 'lucide-react';
 
 export default function AdminDashboardPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('payments'); // 'payments' | 'analytics' | 'audit' | '2fa'
@@ -12,6 +12,7 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSendingReport, setIsSendingReport] = useState(false);
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
 
   // Rejection Modal State
   const [rejectModalPayment, setRejectModalPayment] = useState(null);
@@ -72,6 +73,23 @@ export default function AdminDashboardPage({ onNavigate }) {
       setErrorMessage(err.message || 'Failed to dispatch Telegram report');
     } finally {
       setIsSendingReport(false);
+    }
+  };
+
+  // Send Reminders to all applicants with unpaid applications
+  const handleSendReminders = async () => {
+    try {
+      setIsSendingReminders(true);
+      setErrorMessage('');
+      setMessage('');
+      const res = await apiRequest('/admin/reminders/send-unpaid-reminders', { method: 'POST' });
+      if (res.success) {
+        setMessage(`📢 ${res.data.message}`);
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to dispatch reminders');
+    } finally {
+      setIsSendingReminders(false);
     }
   };
 
@@ -163,7 +181,15 @@ export default function AdminDashboardPage({ onNavigate }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={handleSendReminders}
+            disabled={isSendingReminders}
+            className="btn btn-primary"
+            style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
+          >
+            <Bell size={14} /> {isSendingReminders ? 'Sending Reminders...' : 'Send Reminders to Unpaid Applicants'}
+          </button>
           <button
             onClick={handleSendTelegramReport}
             disabled={isSendingReport}

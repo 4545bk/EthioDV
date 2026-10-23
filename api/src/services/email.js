@@ -131,3 +131,65 @@ export async function sendConfirmationEmail(toEmail, { applicantName, confirmati
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Send reminder email for unpaid DV-2027 draft application
+ */
+export async function sendUnpaidReminderEmail(toEmail, { applicantName, entryRef }) {
+  const subject = `Your DV-2027 Application (#${entryRef}) is 90% Complete – Reserve Your Priority Queue Spot`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span style="background: rgba(124, 58, 237, 0.1); color: #7c3aed; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 700;">DV-2027 Pre-Registration</span>
+        <h2 style="color: #0f172a; margin: 12px 0 0 0; font-size: 24px;">Finish Your Application & Secure Your Spot</h2>
+        <p style="color: #64748b; font-size: 14px; margin: 6px 0 0 0;">Applicant: <strong>${applicantName}</strong> (#${entryRef})</p>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 10px 0; font-size: 15px; color: #1e293b; line-height: 1.5;">
+          You have already completed the hardest part of filling out your DV-2027 form and photo! Your application draft is saved.
+        </p>
+        <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b; line-height: 1.5;">
+          Complete your 1,000 ETB reservation now to be placed in <strong>Batch #1 priority queue</strong> so your entry is submitted immediately when the official U.S. State Department portal opens.
+        </p>
+        <a href="https://ethiodv-rho.vercel.app/" style="display: inline-block; background: #7c3aed; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 9999px; font-weight: 700; font-size: 14px;">
+          Complete Registration & Lock Slot →
+        </a>
+      </div>
+
+      <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 14px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; color: #065f46; line-height: 1.5;">
+        <strong>🛡️ 90% Money-Back Guarantee:</strong> If for any reason our operators are unable to successfully submit your application on the official U.S. portal, 90% (900 ETB) is guaranteed to be refunded to your account immediately.
+      </div>
+
+      <p style="font-size: 12px; color: #64748b; text-align: center; margin: 0 0 16px 0;">
+        Need help? Call our customer service desk at <strong>0949478933</strong>.
+      </p>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.4;">
+        <strong>Disclaimer:</strong> EthioDV-FillTrack is an independent non-governmental assistance service not affiliated with the U.S. Government.
+      </div>
+    </div>
+  `;
+
+  if (!resendClient) {
+    console.log(`\n========================================`);
+    console.log(`📧 [MOCK UNPAID REMINDER EMAIL]`);
+    console.log(`To: ${toEmail}`);
+    console.log(`Applicant: ${applicantName} (#${entryRef})`);
+    console.log(`========================================\n`);
+    return { success: true, mocked: true };
+  }
+
+  try {
+    const res = await resendClient.emails.send({
+      from: ENV.FROM_EMAIL,
+      to: toEmail,
+      subject,
+      html,
+    });
+    return { success: true, data: res };
+  } catch (err) {
+    console.error('Reminder email send error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
