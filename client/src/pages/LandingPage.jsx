@@ -4,9 +4,10 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { apiRequest } from '../services/api.js';
 import { Shield, ShieldCheck, CheckCircle2, Clock, Smartphone, ArrowRight, HelpCircle, AlertCircle, Search } from 'lucide-react';
 import CountdownTimer from '../components/CountdownTimer.jsx';
+import EligibilityQuiz from '../components/EligibilityQuiz.jsx';
 
 export default function LandingPage({ onNavigate }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const [settings, setSettings] = useState(null);
   const [trackRef, setTrackRef] = useState('');
@@ -128,6 +129,9 @@ export default function LandingPage({ onNavigate }) {
           <CountdownTimer onNavigate={onNavigate} />
         </div>
       </section>
+
+      {/* Interactive 30-Second DV-2027 Eligibility Quiz */}
+      <EligibilityQuiz language={language} onNavigate={onNavigate} />
 
       {/* 90% Money-Back Guarantee Section (Prominent, High-Trust Visual Placement) */}
       <section style={{ padding: '10px 0 30px 0' }}>

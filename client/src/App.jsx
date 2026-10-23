@@ -33,7 +33,7 @@ function getInitialPage() {
   if (path === 'refund') return 'refund';
   if (path === 'operator') return 'operator';
   if (path === 'admin') return 'admin';
-  if (path === 'wizard') return 'wizard';
+  if (path === 'wizard' || path === 'apply') return 'wizard';
   if (path === 'tracker') return 'tracker';
   return 'home';
 }
