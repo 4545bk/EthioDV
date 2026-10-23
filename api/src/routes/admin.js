@@ -1194,7 +1194,7 @@ router.get('/entries', async (req, res, next) => {
           childrenCount: primary?.childrenCount || 0,
           paymentId: payment?._id || null,
           paymentStatus: payment?.status || 'UNPAID',
-          paymentAmountETB: payment?.displayAmountETB || (payment?.amountETBCents ? payment.amountETBCents / 100 : 1000),
+          paymentAmountETB: payment ? (payment.displayAmountETB || (payment.amountETBCents ? payment.amountETBCents / 100 : 0)) : 0,
           paymentProvider: payment?.provider || null,
           claimedTransactionCode: payment?.claimedTransactionCode || null,
           receiptUrl,

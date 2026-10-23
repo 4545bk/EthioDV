@@ -673,58 +673,6 @@ export default function AdminDashboardPage({ onNavigate }) {
   const realTotalPendingPayment = analytics?.counts?.totalPendingPayment ?? entries.filter((e) => e.status === 'PAYMENT_PENDING').length;
   const realConversionRate = analytics?.funnel?.conversionRateOverall ?? (realTotalUsers > 0 ? ((realTotalPaid / realTotalUsers) * 100).toFixed(1) + '%' : '0%');
 
-  // Unified list of pending receipts requiring admin review/action
-  const pendingReceiptItems = useMemo(() => {
-    const list = [];
-    const seenEntryIds = new Set();
-
-    // 1. From payments state (status=PENDING_VERIFICATION)
-    payments.forEach((p) => {
-      const eId = p.entryId ? String(p.entryId) : null;
-      if (eId) seenEntryIds.add(eId);
-      list.push({
-        id: p.id,
-        paymentId: p.id,
-        entryId: p.entryId,
-        entryRef: p.entryRef,
-        applicantName: p.senderName || p.userEmail?.split('@')[0] || 'Applicant',
-        email: p.userEmail || 'N/A',
-        phone: p.claimedSenderPhone || null,
-        provider: p.provider || 'Bank Transfer',
-        claimedTransactionCode: p.claimedTransactionCode,
-        amountETB: p.amountETB || 1000,
-        receiptUrl: p.receiptUrl,
-        createdAt: p.createdAt,
-        hasReceipt: !!p.receiptUrl,
-      });
-    });
-
-    // 2. From filteredEntries with status PAYMENT_PENDING or PENDING_VERIFICATION
-    filteredEntries.forEach((e) => {
-      if (seenEntryIds.has(String(e.id))) return;
-      if (e.paymentStatus === 'PENDING_VERIFICATION' || e.status === 'PAYMENT_PENDING') {
-        seenEntryIds.add(String(e.id));
-        list.push({
-          id: e.paymentId || e.id,
-          paymentId: e.paymentId,
-          entryId: e.id,
-          entryRef: e.uniqueReference,
-          applicantName: e.applicantName || 'Applicant',
-          email: e.applicantEmail,
-          phone: e.applicantPhone,
-          provider: e.paymentProvider || 'Bank Transfer',
-          claimedTransactionCode: e.claimedTransactionCode,
-          amountETB: e.paymentAmountETB || 1000,
-          receiptUrl: e.receiptUrl,
-          createdAt: e.createdAt,
-          hasReceipt: !!e.receiptUrl,
-        });
-      }
-    });
-
-    return list;
-  }, [payments, filteredEntries]);
-
   // Real 7-day chart bars
   const chartDays = analytics?.volumeByDay || [
     { day: 'Sun', count: 0 },
@@ -2071,180 +2019,6 @@ export default function AdminDashboardPage({ onNavigate }) {
                 </div>
               </div>
 
-              {/* ACTION CENTER: PENDING RECEIPT VERIFICATIONS */}
-              {pendingReceiptItems.length > 0 && (
-                <div
-                  style={{
-                    background: '#ffffff',
-                    border: '2px solid #f59e0b',
-                    borderRadius: 14,
-                    padding: '18px 22px',
-                    boxShadow: '0 10px 25px -5px rgba(245, 158, 11, 0.12)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Receipt size={20} />
-                      </div>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0f172a' }}>
-                            Action Required: Pending Payment Receipts
-                          </h3>
-                          <span style={{ fontSize: 11, fontWeight: 800, background: '#ef4444', color: '#ffffff', padding: '2px 8px', borderRadius: 9999 }}>
-                            {pendingReceiptItems.length} ACTION NEEDED
-                          </span>
-                        </div>
-                        <span style={{ fontSize: 12, color: '#64748b' }}>
-                          Accept or Reject customer transfer receipts below to advance their entry into the official filing queue.
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {pendingReceiptItems.map((rec) => (
-                      <div
-                        key={rec.id}
-                        style={{
-                          background: '#f8fafc',
-                          border: '1px solid #fed7aa',
-                          borderRadius: 10,
-                          padding: '12px 16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 240 }}>
-                          {rec.receiptUrl ? (
-                            <img
-                              src={rec.receiptUrl}
-                              alt="Receipt"
-                              onClick={() => setPreviewReceiptPayment(rec)}
-                              title="Click to view full receipt"
-                              style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', cursor: 'pointer', border: '1.5px solid #cbd5e1' }}
-                            />
-                          ) : (
-                            <div style={{ width: 44, height: 44, borderRadius: 8, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                              <Receipt size={20} />
-                            </div>
-                          )}
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <strong style={{ fontSize: 13, color: '#0f172a' }}>{rec.applicantName}</strong>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 11, color: '#4f46e5', background: '#eef2ff', padding: '1px 6px', borderRadius: 4 }}>
-                                #{rec.entryRef}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                              {rec.email || 'N/A'} {rec.phone ? `• ${rec.phone}` : ''}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                          <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: 11, color: '#64748b' }}>Provider & Amount</div>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>
-                              {rec.provider || 'Bank'} • <strong style={{ color: '#059669' }}>{rec.amountETB} ETB</strong>
-                            </div>
-                          </div>
-
-                          <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: 11, color: '#64748b' }}>Claimed Tx Code</div>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'monospace', fontWeight: 800, fontSize: 12, color: '#0f172a', background: '#ffffff', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: 4 }}>
-                              <span>{rec.claimedTransactionCode || 'NO-CODE'}</span>
-                              {rec.claimedTransactionCode && (
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(rec.claimedTransactionCode);
-                                    setMessage(`📋 Copied Tx Code: ${rec.claimedTransactionCode}`);
-                                  }}
-                                  title="Copy Code"
-                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: '#64748b' }}
-                                >
-                                  <Copy size={11} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          {rec.receiptUrl && (
-                            <button
-                              onClick={() => setPreviewReceiptPayment(rec)}
-                              title="View full receipt slip"
-                              style={{
-                                padding: '7px 12px',
-                                borderRadius: 8,
-                                border: '1px solid #cbd5e1',
-                                background: '#ffffff',
-                                color: '#0f172a',
-                                fontSize: 12,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <Eye size={13} /> View Slip
-                            </button>
-                          )}
-                          <button
-                            onClick={() => rec.paymentId ? handleApprovePayment(rec.paymentId, rec.entryRef) : handleApproveEntryPayment(rec.entryId, rec.entryRef)}
-                            title="Accept deposit & advance applicant to queue"
-                            style={{
-                              padding: '7px 14px',
-                              borderRadius: 8,
-                              border: 'none',
-                              background: '#10b981',
-                              color: '#ffffff',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 6,
-                              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)',
-                            }}
-                          >
-                            <CheckCircle2 size={14} /> Accept Receipt
-                          </button>
-                          <button
-                            onClick={() => setRejectModalPayment({ id: rec.paymentId, entryId: rec.entryId, entryRef: rec.entryRef, amountETB: rec.amountETB, isEntry: !rec.paymentId })}
-                            title="Reject deposit"
-                            style={{
-                              padding: '7px 12px',
-                              borderRadius: 8,
-                              border: '1px solid #fecaca',
-                              background: '#fff1f2',
-                              color: '#e11d48',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                          >
-                            <XCircle size={14} /> Reject
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* ROW 2: REAL VOLUME TREND + LIVE ACTIVITY FEED */}
               <div className="admin-middle-grid" style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: 16 }}>
                 {/* Volume Trend Chart */}
@@ -2973,87 +2747,27 @@ export default function AdminDashboardPage({ onNavigate }) {
                                 </td>
                                 <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, flexWrap: 'wrap' }}>
-                                    {/* Quick Receipt Accept & Reject Buttons */}
-                                    {(e.paymentStatus === 'PENDING_VERIFICATION' || e.status === 'PAYMENT_PENDING' || e.status === 'PAYMENT_REJECTED') ? (
-                                      <>
-                                        {e.receiptUrl && (
-                                          <button
-                                            onClick={() => setPreviewReceiptPayment(e)}
-                                            title="View uploaded transfer receipt slip"
-                                            style={{
-                                              padding: '5px 9px',
-                                              borderRadius: 6,
-                                              border: '1px solid #bfdbfe',
-                                              background: '#eff6ff',
-                                              color: '#1d4ed8',
-                                              fontSize: 11,
-                                              fontWeight: 700,
-                                              cursor: 'pointer',
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: 4,
-                                            }}
-                                          >
-                                            <Eye size={12} /> Receipt
-                                          </button>
-                                        )}
-                                        <button
-                                          onClick={() => e.paymentId ? handleApprovePayment(e.paymentId, e.uniqueReference) : handleApproveEntryPayment(e.id, e.uniqueReference)}
-                                          title="Accept Deposit & Move to Priority Queue"
-                                          style={{
-                                            padding: '5px 10px',
-                                            borderRadius: 6,
-                                            border: 'none',
-                                            background: '#10b981',
-                                            color: '#ffffff',
-                                            fontSize: 11,
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 4,
-                                            boxShadow: '0 1px 2px rgba(16, 185, 129, 0.3)',
-                                          }}
-                                        >
-                                          <CheckCircle2 size={12} /> Accept
-                                        </button>
-                                        <button
-                                          onClick={() => setRejectModalPayment({ id: e.paymentId, entryId: e.id, entryRef: e.uniqueReference, amountETB: e.paymentAmountETB || 1000, isEntry: !e.paymentId })}
-                                          title="Reject Deposit"
-                                          style={{
-                                            padding: '5px 9px',
-                                            borderRadius: 6,
-                                            border: '1px solid #fecaca',
-                                            background: '#fff1f2',
-                                            color: '#e11d48',
-                                            fontSize: 11,
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 4,
-                                          }}
-                                        >
-                                          <XCircle size={12} /> Reject
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <span
+                                    {/* If customer uploaded a screenshot receipt, show View Receipt button */}
+                                    {e.receiptUrl && (
+                                      <button
+                                        onClick={() => setPreviewReceiptPayment(e)}
+                                        title="View uploaded transfer receipt slip"
                                         style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: 3,
-                                          padding: '3px 8px',
+                                          padding: '5px 9px',
                                           borderRadius: 6,
+                                          border: '1px solid #bfdbfe',
+                                          background: '#eff6ff',
+                                          color: '#1d4ed8',
                                           fontSize: 11,
                                           fontWeight: 700,
-                                          background: '#dcfce7',
-                                          color: '#15803d',
-                                          border: '1px solid #bbf7d0',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 4,
                                         }}
                                       >
-                                        <Check size={11} /> Paid
-                                      </span>
+                                        <Eye size={12} /> Receipt
+                                      </button>
                                     )}
 
                                     <button
