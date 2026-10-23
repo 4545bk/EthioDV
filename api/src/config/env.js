@@ -1,14 +1,24 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Robust multi-path dotenv loading (works whether run from root, api, or Vercel serverless)
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'api/.env') });
 
 export const ENV = {
-  NODE_ENV: process.env.NODE_ENV || 'development',
+  NODE_ENV: process.env.NODE_ENV || 'production',
   PORT: process.env.PORT || 5000,
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
-  APP_URL: process.env.APP_URL || 'http://localhost:5000',
+  CLIENT_URL: process.env.CLIENT_URL || 'https://ethiodv-rho.vercel.app',
+  APP_URL: process.env.APP_URL || 'https://ethiodv-rho.vercel.app',
   
   // Database
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/dvfilltrack',
+  MONGODB_URI: process.env.MONGODB_URI || 'mongodb+srv://betremariyamgizaw_db_user:0GtX02N73UXKdP3z@ethiodv.vfjw9gd.mongodb.net/ethiodv?retryWrites=true&w=majority',
   
   // Security & JWT
   JWT_SECRET: process.env.JWT_SECRET || 'dev-super-secret-jwt-key-dvfilltrack-2027-change-in-prod-min32chars',
@@ -29,10 +39,10 @@ export const ENV = {
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
   
-  // Telegram Bot
-  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
-  TELEGRAM_ADMIN_CHAT_ID: process.env.TELEGRAM_ADMIN_CHAT_ID || '',
-  TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET || 'dvfilltrack_tg_webhook_secret',
+  // Telegram Bot (@DV2027EthioDv_Bot)
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '8641658422:AAGJ0tCYMUZynsD5JhUhN-ygolXlsCcLpL0',
+  TELEGRAM_ADMIN_CHAT_ID: process.env.TELEGRAM_ADMIN_CHAT_ID || '-1004337177807',
+  TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET || 'ethiodv_tg_secret_123456',
   
   // Email Service (Resend)
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
