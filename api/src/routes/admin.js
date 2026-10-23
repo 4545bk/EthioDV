@@ -631,6 +631,159 @@ router.post('/payments/:paymentId/reject', requireSuperAdmin, async (req, res, n
 });
 
 /**
+ * POST /api/v1/admin/entries/:entryId/approve-payment
+ * Direct Super Admin approval of payment for an entry
+ */
+router.post('/entries/:entryId/approve-payment', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const entry = await Entry.findById(req.params.entryId);
+    if (!entry) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry not found' } });
+    }
+
+    let payment = await Payment.findOne({ entryId: entry._id }).sort({ createdAt: -1 });
+    const settings = await Settings.getGlobal();
+    const approvedPrice = settings.priceETB || 1000;
+
+    if (!payment) {
+      payment = await Payment.create({
+        entryId: entry._id,
+        userId: entry.userId,
+        amountETBCents: approvedPrice * 100,
+        provider: 'MANUAL_APPROVAL',
+        claimedTransactionCode: 'ADMIN-DIRECT-PAY',
+        status: 'APPROVED',
+        approvedBy: req.user.id,
+        approvedAt: new Date(),
+      });
+    } else {
+      payment.status = 'APPROVED';
+      payment.approvedBy = req.user.id;
+      if (!payment.approvedAt) payment.approvedAt = new Date();
+      await payment.save();
+    }
+
+    if (['PAYMENT_PENDING', 'DRAFT', 'PAYMENT_REJECTED'].includes(entry.status)) {
+      entry.status = 'QUEUED';
+    }
+    if (!entry.paymentApprovedAt) {
+      entry.paymentApprovedAt = payment.approvedAt;
+    }
+    await entry.save();
+
+    if (entry.linkedEntryId) {
+      const linkedEntry = await Entry.findById(entry.linkedEntryId);
+      if (linkedEntry && ['PAYMENT_PENDING', 'DRAFT', 'PAYMENT_REJECTED'].includes(linkedEntry.status)) {
+        linkedEntry.status = 'QUEUED';
+        if (!linkedEntry.paymentApprovedAt) {
+          linkedEntry.paymentApprovedAt = payment.approvedAt;
+        }
+        await linkedEntry.save();
+      }
+    }
+
+    await recordAudit(req, {
+      action: 'APPROVE_PAYMENT',
+      targetEntity: 'Entry',
+      targetId: entry._id,
+      metadata: { entryRef: entry.uniqueReference, paymentId: payment._id },
+    });
+
+    try {
+      const user = await User.findById(entry.userId);
+      if (user?.telegramChatId) {
+        await sendTelegramUserMessage(
+          user.telegramChatId,
+          `✅ ክፍያዎ ተረጋግጧል! ማመልከቻዎ (#${entry.uniqueReference}) በቅደም ተከተል ተመዝግቧል።`
+        );
+      }
+      const formData = await FormData.findOne({ entryId: entry._id });
+      const applicantName = formData?.primary?.name
+        ? `${formData.primary.name.firstName || ''} ${formData.primary.name.lastName || ''}`.trim()
+        : (user?.fullName || user?.name || 'Applicant');
+      const queuePosition = await Entry.countDocuments({ status: 'QUEUED' });
+
+      await notifyAdminDepositApproved({
+        entryRef: entry.uniqueReference,
+        applicantName,
+        amountETB: payment.displayAmountETB || approvedPrice,
+        provider: payment.provider || 'CBE / Telebirr',
+        txCode: payment.claimedTransactionCode || 'DIRECT-APPROVAL',
+        adminName: req.user?.fullName || req.user?.name || req.user?.email || 'Super Admin',
+        queuePosition,
+      });
+    } catch (tgErr) {
+      console.warn('Telegram notification failed:', tgErr.message);
+    }
+
+    return res.json({ success: true, data: { message: `Payment approved for #${entry.uniqueReference}! Entry placed in queue.` } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/v1/admin/entries/:entryId/reject-payment
+ * Direct Super Admin rejection of payment for an entry
+ */
+router.post('/entries/:entryId/reject-payment', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const entry = await Entry.findById(req.params.entryId);
+    if (!entry) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry not found' } });
+    }
+
+    entry.status = 'PAYMENT_REJECTED';
+    await entry.save();
+
+    const payment = await Payment.findOne({ entryId: entry._id }).sort({ createdAt: -1 });
+    if (payment) {
+      payment.status = 'REJECTED';
+      payment.rejectionReason = reason || 'Payment transfer could not be verified.';
+      await payment.save();
+    }
+
+    await recordAudit(req, {
+      action: 'REJECT_PAYMENT',
+      targetEntity: 'Entry',
+      targetId: entry._id,
+      metadata: { entryRef: entry.uniqueReference, reason },
+    });
+
+    try {
+      const user = await User.findById(entry.userId);
+      if (user?.telegramChatId) {
+        await sendTelegramUserMessage(
+          user.telegramChatId,
+          `❌ የክፍያ ማረጋገጫዎ ውድቅ ተደርጓል (#${entry.uniqueReference}): ${reason || 'የተላከው የክፍያ ደረሰኝ አልተረጋገጠም'}። እባክዎ ትክክለኛውን ደረሰኝ በድጋሚ ይላኩ።`
+        );
+      }
+      const formData = await FormData.findOne({ entryId: entry._id });
+      const applicantName = formData?.primary?.name
+        ? `${formData.primary.name.firstName || ''} ${formData.primary.name.lastName || ''}`.trim()
+        : (user?.fullName || 'Applicant');
+
+      await notifyAdminDepositRejected({
+        entryRef: entry.uniqueReference,
+        applicantName,
+        amountETB: payment?.displayAmountETB || 1000,
+        provider: payment?.provider || 'Bank Transfer',
+        txCode: payment?.claimedTransactionCode || 'N/A',
+        reason: reason || 'Receipt verification failed',
+        adminName: req.user?.fullName || req.user?.email || 'Super Admin',
+      });
+    } catch (tgErr) {
+      console.warn('Telegram notification failed:', tgErr.message);
+    }
+
+    return res.json({ success: true, data: { message: `Payment for #${entry.uniqueReference} rejected.` } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /api/v1/admin/analytics
  * Comprehensive financial and funnel analytics filtered by timeframe
  */
@@ -1016,6 +1169,13 @@ router.get('/entries', async (req, res, next) => {
         const isGoogle = !!(e.userId?.googleId || e.userId?.authProvider === 'google');
         const applicantPhone = primary?.phone || payment?.claimedSenderPhone || e.userId?.phone || null;
 
+        let receiptUrl = null;
+        if (payment?.receiptFileKey) {
+          try {
+            receiptUrl = await getPresignedDownloadUrl(payment.receiptFileKey);
+          } catch (err) {}
+        }
+
         return {
           id: e._id,
           uniqueReference: e.uniqueReference,
@@ -1032,10 +1192,14 @@ router.get('/entries', async (req, res, next) => {
           education: primary?.educationLevel || 'N/A',
           maritalStatus: primary?.maritalStatus || 'UNMARRIED',
           childrenCount: primary?.childrenCount || 0,
+          paymentId: payment?._id || null,
           paymentStatus: payment?.status || 'UNPAID',
-          paymentAmountETB: payment?.displayAmountETB || 0,
+          paymentAmountETB: payment?.displayAmountETB || (payment?.amountETBCents ? payment.amountETBCents / 100 : 1000),
           paymentProvider: payment?.provider || null,
           claimedTransactionCode: payment?.claimedTransactionCode || null,
+          receiptUrl,
+          receiptFileKey: payment?.receiptFileKey || null,
+          senderName: payment?.senderName || null,
           primaryPhotoUrl,
           primaryPhotoKey: primary?.photoKey || null,
           confirmationNumber: e.getConfirmationNumber ? e.getConfirmationNumber() : null,
