@@ -348,6 +348,122 @@ export default function AdminDashboardPage({ onNavigate }) {
     }
   };
 
+  // Copy payload for EthioDV Operator Auto-Filler Chrome Extension
+  const handleExportToExtension = (entry, formData) => {
+    if (!entry || !formData) {
+      alert('No active applicant data loaded to export.');
+      return;
+    }
+
+    const p = formData.primary || {};
+    const s = formData.spouse || null;
+    const kids = Array.isArray(formData.children) ? formData.children : [];
+
+    const lastName = p.name?.lastName || p.lastName || '';
+    const firstName = p.name?.firstName || p.firstName || '';
+    const middleName = p.name?.middleName || p.middleName || '';
+    const hasNoMiddleName = Boolean(p.name?.hasNoMiddleName || p.noMiddleName);
+
+    const birthMonth = p.birthDate?.month || p.birthMonth || 1;
+    const birthDay = p.birthDate?.day || p.birthDay || 1;
+    const birthYear = p.birthDate?.year || p.birthYear || 1995;
+
+    const birthCity = p.birthCity || '';
+    const isBirthCityUnknown = Boolean(p.isBirthCityUnknown || p.birthCityUnknown);
+    const birthCountry = p.birthCountry || 'Ethiopia';
+    const eligibilityCountry = p.eligibilityCountry || 'Ethiopia';
+    const isClaimingAlternateChargeability = Boolean(p.isClaimingAlternateChargeability);
+    const chargeabilityCountry = p.chargeabilityCountry || p.chargeabilityExplanation || '';
+
+    const addr = p.mailingAddress || {};
+    const inCareOf = addr.inCareOf || p.inCareOf || '';
+    const addressLine1 = addr.addressLine1 || p.addressLine1 || (typeof p.mailingAddress === 'string' ? p.mailingAddress : '');
+    const addressLine2 = addr.addressLine2 || p.addressLine2 || '';
+    const city = addr.city || p.city || 'Addis Ababa';
+    const district = addr.district || addr.districtProvince || p.district || '';
+    const postalCode = addr.postalCode || p.postalCode || '';
+    const noPostalCode = Boolean(addr.hasNoPostalCode || addr.noPostalCode || p.noPostalCode || !postalCode);
+    const country = addr.country || p.country || 'Ethiopia';
+    const liveCountry = p.residenceCountry || p.liveCountry || 'Ethiopia';
+
+    const phone = p.phone || '';
+    const email = p.email || '';
+    const educationLevel = p.educationLevel || 'HIGH_SCHOOL_DEGREE';
+    const maritalStatus = p.maritalStatus || 'UNMARRIED';
+    const childrenCount = String(p.childrenCount ?? kids.length ?? 0);
+
+    let formattedSpouse = null;
+    if (s && (s.name?.firstName || s.firstName)) {
+      formattedSpouse = {
+        lastName: s.name?.lastName || s.lastName || '',
+        firstName: s.name?.firstName || s.firstName || '',
+        middleName: s.name?.middleName || s.middleName || '',
+        noMiddleName: Boolean(s.name?.hasNoMiddleName || s.noMiddleName),
+        gender: s.gender || 'F',
+        birthMonth: String(s.birthDate?.month || s.birthMonth || 1).padStart(2, '0'),
+        birthDay: String(s.birthDate?.day || s.birthDay || 1).padStart(2, '0'),
+        birthYear: String(s.birthDate?.year || s.birthYear || 1997),
+        birthCity: s.birthCity || '',
+        birthCityUnknown: Boolean(s.isBirthCityUnknown || s.birthCityUnknown),
+        birthCountry: s.birthCountry || 'Ethiopia',
+      };
+    }
+
+    const formattedChildren = kids.map((c) => ({
+      lastName: c.name?.lastName || c.lastName || '',
+      firstName: c.name?.firstName || c.firstName || '',
+      middleName: c.name?.middleName || c.middleName || '',
+      noMiddleName: Boolean(c.name?.hasNoMiddleName || c.noMiddleName),
+      gender: c.gender || 'M',
+      birthMonth: String(c.birthDate?.month || c.birthMonth || 1).padStart(2, '0'),
+      birthDay: String(c.birthDate?.day || c.birthDay || 1).padStart(2, '0'),
+      birthYear: String(c.birthDate?.year || c.birthYear || 2018),
+      birthCity: c.birthCity || '',
+      birthCityUnknown: Boolean(c.isBirthCityUnknown || c.birthCityUnknown),
+      birthCountry: c.birthCountry || 'Ethiopia',
+    }));
+
+    const payload = {
+      type: 'ETHIODV_AUTOFILL_V1',
+      reference: entry.uniqueReference,
+      primary: {
+        lastName,
+        firstName,
+        middleName: hasNoMiddleName ? '' : middleName,
+        noMiddleName: hasNoMiddleName,
+        gender: p.gender || 'M',
+        birthMonth: String(birthMonth).padStart(2, '0'),
+        birthDay: String(birthDay).padStart(2, '0'),
+        birthYear: String(birthYear),
+        birthCity: isBirthCityUnknown ? '' : birthCity,
+        birthCityUnknown: isBirthCityUnknown,
+        birthCountry,
+        eligibilityCountry,
+        isClaimingAlternateChargeability,
+        chargeabilityCountry,
+        inCareOf,
+        addressLine1,
+        addressLine2,
+        city,
+        district,
+        postalCode: noPostalCode ? '' : postalCode,
+        noPostalCode,
+        country,
+        liveCountry,
+        phone,
+        email,
+        educationLevel,
+        maritalStatus,
+        childrenCount,
+      },
+      spouse: formattedSpouse,
+      children: formattedChildren,
+    };
+
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+    alert(`⚡ Copied #${entry.uniqueReference} payload for EthioDV Auto-Fill Extension!\n\nSwitch to dvprogram.state.gov and click "Auto-Fill Official Form" in the extension popup.`);
+  };
+
   // Quick sequential photo download for an entry
   const handleQuickDownloadPhotos = async (entryId, entryRef) => {
     try {
@@ -1380,6 +1496,30 @@ export default function AdminDashboardPage({ onNavigate }) {
 
                   {activeFilingData && (
                     <button
+                      type="button"
+                      onClick={() => handleExportToExtension(activeFilingData.entry, activeFilingData.formData)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 14px',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: '#ffffff',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.35)',
+                      }}
+                      title="1-Click Copy decrypted dossier for EthioDV Auto-Filler Chrome Extension"
+                    >
+                      <Zap size={14} /> ⚡ Copy Extension Payload
+                    </button>
+                  )}
+
+                  {activeFilingData && (
+                    <button
                       onClick={handleReleaseFilingLock}
                       style={{
                         padding: '8px 12px',
@@ -1464,6 +1604,28 @@ export default function AdminDashboardPage({ onNavigate }) {
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleExportToExtension(activeFilingData.entry, activeFilingData.formData)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 14px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: 11,
+                            fontWeight: 800,
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            color: '#ffffff',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+                          }}
+                          title="1-Click Copy decrypted dossier for EthioDV Auto-Filler Chrome Extension"
+                        >
+                          <Zap size={13} /> ⚡ Copy Extension Payload
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => setIsApplicantDataExpanded((prev) => !prev)}

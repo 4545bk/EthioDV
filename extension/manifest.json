@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "EthioDV Operator Auto-Filler",
+  "version": "1.0.0",
+  "description": "1-Click DOM Auto-Filler for dvprogram.state.gov from EthioDV Filing Station",
+  "permissions": ["activeTab", "scripting", "clipboardRead"],
+  "host_permissions": ["https://dvprogram.state.gov/*"],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

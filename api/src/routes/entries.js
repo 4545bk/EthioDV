@@ -6,6 +6,7 @@ import Entry from '../models/Entry.js';
 import FormData from '../models/FormData.js';
 import Payment from '../models/Payment.js';
 import { getPresignedDownloadUrl } from '../services/r2.js';
+import { createMirroredSpouseEntry } from '../services/dualEntryGenerator.js';
 
 const router = express.Router();
 
@@ -302,7 +303,20 @@ router.post('/:id/submit', authenticateToken, async (req, res, next) => {
     }
 
     entry.status = 'PAYMENT_PENDING';
-    await entry.save();
+
+    const { includeSpousePrimaryEntry, spouseEducationLevel } = req.body || {};
+    let mirroredEntry = null;
+
+    if (includeSpousePrimaryEntry && formData.spouse?.name?.firstName && formData.spouse?.name?.lastName) {
+      entry.packageTier = 'DUAL_COUPLE';
+      await entry.save();
+      mirroredEntry = await createMirroredSpouseEntry(entry, formData, spouseEducationLevel || 'HIGH_SCHOOL_DEGREE');
+    } else {
+      if (!entry.packageTier || entry.packageTier === 'DUAL_COUPLE') {
+        entry.packageTier = 'SINGLE';
+      }
+      await entry.save();
+    }
 
     return res.json({
       success: true,
@@ -310,6 +324,9 @@ router.post('/:id/submit', authenticateToken, async (req, res, next) => {
         message: 'Form submitted successfully. Please proceed to payment.',
         entryId: entry._id,
         status: entry.status,
+        packageTier: entry.packageTier,
+        linkedEntryId: mirroredEntry?._id || entry.linkedEntryId || null,
+        mirrorReference: mirroredEntry?.uniqueReference || null,
       },
     });
   } catch (err) {

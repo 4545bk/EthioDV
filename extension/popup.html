@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>EthioDV Filing Assistant</title>
+  <style>
+    body {
+      width: 300px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 14px;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    h3 {
+      margin: 0 0 4px 0;
+      font-size: 15px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    p {
+      font-size: 11.5px;
+      color: #94a3b8;
+      margin: 0 0 12px 0;
+      line-height: 1.4;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: filter 0.15s, transform 0.1s;
+    }
+    button:hover {
+      filter: brightness(1.1);
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    #fillPart1 {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+    }
+    #fillPart2 {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #ffffff;
+    }
+    #status {
+      font-size: 11px;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: rgba(30, 41, 59, 0.8);
+      color: #fbbf24;
+      word-break: break-word;
+      line-height: 1.4;
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <h3>⚡ EthioDV Auto-Filler</h3>
+  <span class="badge">Official DV-2027 Portal Helper</span>
+  <p>Copy payload from EthioDV Filing Station first, open <code>dvprogram.state.gov</code>, then click below.</p>
+  
+  <button id="fillPart1">1. Auto-Fill Part 1 (Primary Entrant)</button>
+  <button id="fillPart2">2. Auto-Fill Part 2 (Spouse & Children)</button>
+  
+  <div id="status">Ready. Copy payload from EthioDV Filing Station.</div>
+  <script src="popup.js"></script>
+</body>
+</html>

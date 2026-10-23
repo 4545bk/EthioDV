@@ -241,9 +241,17 @@ export default function PaymentPage({ onNavigate, entryId }) {
                   <span className="badge badge-success" style={{ fontSize: 11, padding: '2px 8px' }}>
                     ✓ ፎቶ ተረጋግጧል (Photo Ready)
                   </span>
+                  {entry?.packageTier === 'DUAL_COUPLE' && (
+                    <span className="badge" style={{ background: '#f59e0b', color: '#ffffff', fontSize: 11, padding: '2px 8px', fontWeight: 700 }}>
+                      🔥 የጥንዶች ድርብ ዕድል (2× Chance)
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>
-                  መለያ / Ref: <strong style={{ color: 'var(--primary-600)', fontFamily: 'monospace' }}>#{entry.uniqueReference}</strong> • ቅጹ 100% ተጠናቋል
+                  መለያ / Ref: <strong style={{ color: 'var(--primary-600)', fontFamily: 'monospace' }}>#{entry.uniqueReference}</strong>
+                  {entry?.packageTier === 'DUAL_COUPLE' && (
+                    <span> &amp; <strong style={{ color: '#10b981', fontFamily: 'monospace' }}>#{entry.uniqueReference}-S</strong> (2 ማመልከቻዎች)</span>
+                  )} • ቅጹ 100% ተጠናቋል
                 </div>
               </div>
             </div>
@@ -340,6 +348,41 @@ export default function PaymentPage({ onNavigate, entryId }) {
           </a>
         </div>
 
+        {/* Payable Fee Summary Card */}
+        <div
+          style={{
+            background: entry?.packageTier === 'DUAL_COUPLE'
+              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(16, 185, 129, 0.08))'
+              : 'rgba(99, 102, 241, 0.05)',
+            border: entry?.packageTier === 'DUAL_COUPLE' ? '1.5px solid #f59e0b' : '1px solid var(--border-subtle)',
+            borderRadius: 12,
+            padding: '16px 20px',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>የሚከፈለው ጠቅላላ የአገልግሎት ክፍያ / Payable Amount:</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
+              <strong style={{ fontSize: 24, color: 'var(--primary-600)', fontFamily: 'monospace' }}>
+                {entry?.packageTier === 'DUAL_COUPLE' ? '1,600 ETB' : '1,000 ETB'}
+              </strong>
+              {entry?.packageTier === 'DUAL_COUPLE' && (
+                <span style={{ fontSize: 12, color: '#10b981', fontWeight: 700 }}>
+                  (2 ማመልከቻዎች — የ 400 ብር ቅናሽ ተደርጓል)
+                </span>
+              )}
+            </div>
+          </div>
+          <span className={entry?.packageTier === 'DUAL_COUPLE' ? 'badge badge-accent' : 'badge badge-primary'} style={{ fontSize: 12, padding: '5px 12px' }}>
+            {entry?.packageTier === 'DUAL_COUPLE' ? '🔥 የጥንዶች ድርብ ዕድል (DUAL)' : 'SINGLE ENTRANT'}
+          </span>
+        </div>
+
         {/* Account Details Box (Aspio Clean Sub-Card) */}
         <div className="sub-card" style={{ marginBottom: 24, border: '1.5px solid var(--border-subtle)', padding: '20px' }}>
           <h4 style={{ fontSize: 15, color: 'var(--primary-600)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
@@ -381,7 +424,7 @@ export default function PaymentPage({ onNavigate, entryId }) {
             🛡️ የ 90% ተመላሽ ዋስትና / 90% Money-Back Guarantee
           </strong>
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: 'var(--text-main)' }}>
-            ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎን በጊዜ ገደቡ ማስገባት ካልቻልን፣ የከፈሉት ገንዘብ <strong>90% (900 ብር)</strong> ሙሉ በሙሉ ወዲያውኑ ወደ አካውንትዎ ይመለሳል (10% የባንክና ቴሌኮም ሂደት ወጪ ብቻ ተቀንሶ)።
+            ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎን በጊዜ ገደቡ ማስገባት ካልቻልን፣ የከፈሉት ገንዘብ <strong>90% ({entry?.packageTier === 'DUAL_COUPLE' ? '1,440 ብር' : '900 ብር'})</strong> ሙሉ በሙሉ ወዲያውኑ ወደ አካውንትዎ ይመለሳል (10% የባንክና ቴሌኮም ሂደት ወጪ ብቻ ተቀንሶ)።
           </p>
           <p style={{ margin: '6px 0 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
             (If anything unforeseen or technical happens from our side preventing filing, 90% of your payment is guaranteed to be returned to you immediately.)

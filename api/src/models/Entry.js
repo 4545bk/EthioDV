@@ -81,6 +81,34 @@ const EntrySchema = new mongoose.Schema(
       type: String,
       index: true,
     },
+    // Links Husband & Wife dual-entries together so one payment approves both
+    linkedEntryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Entry',
+      default: null,
+      index: true,
+    },
+    isDualSpouseMirror: {
+      type: Boolean,
+      default: false,
+    },
+    packageTier: {
+      type: String,
+      enum: ['SINGLE', 'FAMILY', 'DUAL_COUPLE'],
+      default: 'SINGLE',
+    },
+    // B2B Partner / Sub-Agent Attribution
+    agentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+    submissionChannel: {
+      type: String,
+      enum: ['WEB_DIRECT', 'TELEGRAM_MINIAPP', 'B2B_AGENT'],
+      default: 'WEB_DIRECT',
+    },
   },
   {
     timestamps: true,

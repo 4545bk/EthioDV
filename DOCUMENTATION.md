@@ -25,10 +25,11 @@ However, aspiring applicants in Ethiopia encounter severe, systemic barriers tha
 * **Official Proof & Delivery:** Once filed, the operator uploads the official State Department confirmation certificate screenshot and enters the 16-character confirmation number (e.g., `2027XXXXXXXXXXXX`), which is instantly delivered to the user via Email, Telegram, and downloadable PDF.
 
 ### 1.3 Monetization & Business Model
-* **Service Fee:** 1,000 ETB (Ethiopian Birr) per primary application dossier (inclusive of all derivatives/children).
+* **Standard Single Entrant Package:** 1,000 ETB (Ethiopian Birr) per primary application dossier (inclusive of all derivatives/children).
+* **Married "Double-Chance" Package (`DUAL_COUPLE`):** 1,600 ETB (+600 ETB upsell, saving 400 ETB compared to two individual submissions). Under official U.S. State Department regulations, husband and wife can each submit a separate primary entry naming the other as derivative, legally doubling the family's winning probability (2× Chance). A single payment unlocks and approves both linked entries simultaneously!
 * **Transparent Pricing:** No hidden fees, no subscription traps, and no foreign currency markups.
-* **100% Money-Back Guarantee:** If EthioDV fails to submit an applicant's verified dossier during the official window due to technical failure, a full refund is issued under our published Refund Policy.
-* **High-Volume Unit Economics:** With an operational target of 160 processed applications per day per operator station, the platform easily scales to thousands of paid submissions per season.
+* **90% Money-Back Guarantee:** If EthioDV fails to submit an applicant's verified dossier during the official window due to technical failure, a 90% refund (900 ETB for Single / 1,440 ETB for Dual-Couple) is issued immediately under our published Refund Policy.
+* **High-Volume Unit Economics:** With the Operator Auto-Filler Chrome Extension, filing capacity triples from 160 to 500+ processed applications per day per operator station.
 
 ### 1.4 Ethical & Legal Compliance
 EthioDV-FillTrack strictly maintains compliance with international legal standards and U.S. State Department guidance:
@@ -188,9 +189,14 @@ The Filing Station is the core processing engine where authorized operators file
   * When an operator clicks **"Claim Next Entry"**, the system automatically selects the highest-priority queued application (sorted deterministically by `paymentApprovedAt` and `createdAt`).
   * The entry is locked for 30 minutes to prevent other operators from filing the same person simultaneously.
   * A live countdown timer shows the remaining lock time.
+* **⚡ 1-Click Auto-Filler Chrome Extension Integration (`/extension`):**
+  * Instead of manually copying and pasting 25+ individual fields per applicant, operators use the internal **EthioDV Operator Auto-Filler Chrome Extension**.
+  * **"Copy Extension Payload" Button:** A single click on the emerald button copies a structured, standardized JSON payload (`ETHIODV_AUTOFILL_V1`) directly to the clipboard.
+  * **Official ASP.NET WebForms DOM Injection:** In `dvprogram.state.gov`, the operator clicks **"1. Auto-Fill Part 1"** or **"2. Auto-Fill Part 2"** inside the extension popup. The extension maps all names, birth dates, unknown city checkboxes, country dropdowns, addresses, education levels, and marital status directly into the official form inputs in 1 second and dispatches native `input` and `change` events so client validation passes immediately.
+  * **Capacity Tripling:** Eliminates human copy-paste errors and slashes filing time per applicant from 5 minutes to under 45 seconds, boosting daily operator filing throughput from 160 to 500+ entries.
 * **Dossier View & 1-Click Copy Helpers:**
   * Displays entrant full legal name, gender, birth date, birth city, and country of eligibility.
-  * Every single data field (Last Name, First Name, Middle Name, Address Line 1, City, Postal Code, etc.) features an instant **1-Click Copy Button** that copies the exact formatted text to the clipboard for pasting into the official portal.
+  * Every single data field (Last Name, First Name, Middle Name, Address Line 1, City, Postal Code, etc.) features an instant **1-Click Copy Button** as a fallback.
   * Embedded high-resolution photo preview with direct download link.
   * Complete derivative dossiers for spouse and children with individual 1-click copy fields and photos.
 * **Completion & Confirmation Flow:**

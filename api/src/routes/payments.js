@@ -136,7 +136,9 @@ router.post('/submit', authenticateToken, async (req, res, next) => {
     }
 
     const settings = await Settings.getGlobal();
-    const amountETBCents = settings.priceETB * 100;
+    const basePrice = settings.priceETB || 1000;
+    const isDual = entry.packageTier === 'DUAL_COUPLE';
+    const amountETBCents = (isDual ? (basePrice + 600) : basePrice) * 100;
 
     if (!payment) {
       payment = new Payment({

@@ -478,6 +478,18 @@ router.post('/payments/:paymentId/approve', requireSuperAdmin, async (req, res, 
         entry.paymentApprovedAt = payment.approvedAt;
       }
       await entry.save();
+
+      // If linked dual-couple entry exists, approve and queue it together
+      if (entry.linkedEntryId) {
+        const linkedEntry = await Entry.findById(entry.linkedEntryId);
+        if (linkedEntry && ['PAYMENT_PENDING', 'DRAFT', 'PAYMENT_REJECTED'].includes(linkedEntry.status)) {
+          linkedEntry.status = 'QUEUED';
+          if (!linkedEntry.paymentApprovedAt) {
+            linkedEntry.paymentApprovedAt = payment.approvedAt;
+          }
+          await linkedEntry.save();
+        }
+      }
     }
 
     if (wasAlreadyApproved) {

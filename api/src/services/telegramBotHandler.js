@@ -81,6 +81,17 @@ export async function handleTelegramUpdate(update) {
             entry.paymentApprovedAt = payment.approvedAt;
           }
           await entry.save();
+
+          if (entry.linkedEntryId) {
+            const linkedEntry = await Entry.findById(entry.linkedEntryId);
+            if (linkedEntry && ['PAYMENT_PENDING', 'DRAFT', 'PAYMENT_REJECTED'].includes(linkedEntry.status)) {
+              linkedEntry.status = 'QUEUED';
+              if (!linkedEntry.paymentApprovedAt) {
+                linkedEntry.paymentApprovedAt = payment.approvedAt;
+              }
+              await linkedEntry.save();
+            }
+          }
         }
 
         if (user?.telegramChatId) {

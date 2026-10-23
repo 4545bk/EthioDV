@@ -75,6 +75,8 @@ export default function FormWizardPage({ onNavigate, entryId }) {
   });
 
   const [children, setChildren] = useState([]);
+  const [includeSpousePrimaryEntry, setIncludeSpousePrimaryEntry] = useState(false);
+  const [spouseEducationLevel, setSpouseEducationLevel] = useState('HIGH_SCHOOL_DEGREE');
 
   // Load existing entry draft
   useEffect(() => {
@@ -87,6 +89,9 @@ export default function FormWizardPage({ onNavigate, entryId }) {
           if (d.primary) setPrimary((prev) => ({ ...prev, ...d.primary }));
           if (d.spouse) setSpouse((prev) => ({ ...prev, ...d.spouse }));
           if (d.children) setChildren(d.children);
+          if (res.data.entry?.packageTier === 'DUAL_COUPLE') {
+            setIncludeSpousePrimaryEntry(true);
+          }
         }
       })
       .catch((err) => setErrorMessage(err.message))
@@ -145,7 +150,13 @@ export default function FormWizardPage({ onNavigate, entryId }) {
       await handleSaveDraft(true);
 
       // Submit entry
-      const res = await apiRequest(`/entries/${entryId}/submit`, { method: 'POST' });
+      const res = await apiRequest(`/entries/${entryId}/submit`, {
+        method: 'POST',
+        body: JSON.stringify({
+          includeSpousePrimaryEntry: primary.maritalStatus === 'MARRIED_NON_US_CITIZEN' && includeSpousePrimaryEntry,
+          spouseEducationLevel,
+        }),
+      });
       if (res.success) {
         onNavigate('payment', { entryId });
       }
@@ -1089,13 +1100,116 @@ export default function FormWizardPage({ onNavigate, entryId }) {
             )}
           </div>
 
+          {/* MARRIED "DOUBLE-CHANCE" UPSELL CARD */}
+          {primary.maritalStatus === 'MARRIED_NON_US_CITIZEN' && (
+            <div
+              style={{
+                background: includeSpousePrimaryEntry
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.08))'
+                  : 'rgba(245, 158, 11, 0.06)',
+                border: includeSpousePrimaryEntry
+                  ? '2px solid #10b981'
+                  : '1.5px dashed #f59e0b',
+                borderRadius: 12,
+                padding: '18px 20px',
+                marginBottom: 20,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 260 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span
+                      style={{
+                        background: '#f59e0b',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: 11,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                      }}
+                    >
+                      🔥 የዕድል ማባዣ / Double Odds
+                    </span>
+                    <strong style={{ fontSize: 15, color: 'var(--text-main)' }}>
+                      ለባለቤትዎም ተጨማሪ ዋና ማመልከቻ ይጨመር? (Dual-Couple 2× Chance)
+                    </strong>
+                  </div>
+                  <p style={{ margin: '0 0 10px 0', fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    በአሜሪካ ስቴት ዲፓርትመንት ህግ መሰረት ባልና ሚስት ሁለቱም ራሳቸውን እንደ ዋና አመልካች (Primary) አድርገው ማመልከት ይችላሉ። በዚህም የቤተሰብዎ የማሸነፍ ዕድል <strong>በእጥፍ (2×)</strong> ይጨምራል! አንድ ክፍያ ሁለቱንም ማመልከቻዎች ያጠቃልላል።
+                  </p>
+                  <div style={{ fontSize: 12, color: '#10b981', fontWeight: 600 }}>
+                    +600 ብር ብቻ (መደበኛ 1,000 ብር ፈንታ) • የ 400 ብር ቅናሽ!
+                  </div>
+                </div>
+
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    cursor: 'pointer',
+                    background: includeSpousePrimaryEntry ? '#10b981' : 'var(--bg-input)',
+                    color: includeSpousePrimaryEntry ? '#ffffff' : 'var(--text-main)',
+                    padding: '10px 16px',
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    border: '1px solid ' + (includeSpousePrimaryEntry ? '#10b981' : 'var(--border-subtle)'),
+                    userSelect: 'none',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={includeSpousePrimaryEntry}
+                    onChange={(e) => setIncludeSpousePrimaryEntry(e.target.checked)}
+                    style={{ width: 18, height: 18, accentColor: '#10b981', cursor: 'pointer' }}
+                  />
+                  {includeSpousePrimaryEntry ? '✓ ድርብ ዕድል ተመርጧል' : 'ድርብ ዕድል ጨምር (+600 ETB)'}
+                </label>
+              </div>
+
+              {includeSpousePrimaryEntry && (
+                <div
+                  style={{
+                    marginTop: 16,
+                    paddingTop: 14,
+                    borderTop: '1px solid rgba(16, 185, 129, 0.25)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}
+                >
+                  <label style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-main)' }}>
+                    የባለቤትዎ የትምህርት ደረጃ (Spouse's Education Level) *
+                  </label>
+                  <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                    ባለቤትዎ እንደ ዋና አመልካች ሆነው በስቴት ዲፓርትመንት ፖርታል እንዲገቡ የትምህርት ደረጃቸው ያስፈልጋል:
+                  </span>
+                  <select
+                    value={spouseEducationLevel}
+                    onChange={(e) => setSpouseEducationLevel(e.target.value)}
+                    className="form-input"
+                    style={{ maxWidth: 450, padding: '8px 12px', fontSize: 13 }}
+                  >
+                    {Object.entries(EDUCATION_LABELS).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 90% Money-Back Guarantee Trust Box */}
           <div className="info-box" style={{ marginBottom: 20, borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.08)' }}>
             <strong style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: 14, marginBottom: 4 }}>
               <ShieldCheck size={18} /> የ 90% የተመላሽ ገንዘብ ዋስትና (90% Money-Back Guarantee)
             </strong>
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: 'var(--text-main)' }}>
-              ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎ በጊዜ ገደቡ ሳይገባ ቢቀር፣ የከፈሉት ገንዘብ <strong>90% (900 ብር)</strong> ሙሉ በሙሉ ወዲያውኑ ይመለስልዎታል።
+              ከእኛ በኩል በሚፈጠር ማንኛውም ቴክኒካል ወይም የአሰራር መስተጓጎል ማመልከቻዎ በጊዜ ገደቡ ሳይገባ ቢቀር፣ የከፈሉት ገንዘብ <strong>90% ({includeSpousePrimaryEntry ? '1,440 ብር' : '900 ብር'})</strong> ሙሉ በሙሉ ወዲያውኑ ይመለስልዎታል።
             </p>
           </div>
 
@@ -1124,7 +1238,11 @@ export default function FormWizardPage({ onNavigate, entryId }) {
               textAlign: 'center',
             }}
           >
-            {isSaving ? 'በማስገባት ላይ...' : 'መረጃዎቼን አረጋግጫለሁ፤ ወደ ክፍያ ቀጥል (1,000 ETB) / Confirm Details & Proceed to Payment →'}
+            {isSaving
+              ? 'በማስገባት ላይ...'
+              : includeSpousePrimaryEntry
+              ? 'መረጃዎቼን አረጋግጫለሁ፤ ወደ ክፍያ ቀጥል (1,600 ETB - የጥንዶች ድርብ ዕድል) / Confirm & Proceed to Payment (1,600 ETB) →'
+              : 'መረጃዎቼን አረጋግጫለሁ፤ ወደ ክፍያ ቀጥል (1,000 ETB) / Confirm Details & Proceed to Payment →'}
           </button>
         </div>
       )}
