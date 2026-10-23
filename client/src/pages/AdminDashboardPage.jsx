@@ -45,7 +45,8 @@ import {
   Copy,
   Eye,
   Receipt,
-  FileText
+  FileText,
+  Menu
 } from 'lucide-react';
 
 export default function AdminDashboardPage({ onNavigate }) {
