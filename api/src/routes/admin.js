@@ -615,22 +615,76 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
     const totalFiled = await Entry.countDocuments({ status: { $in: ['FILED', 'CONFIRMED'] } });
     const totalQueued = await Entry.countDocuments({ status: { $in: ['QUEUED', 'FILING_IN_PROGRESS'] } });
 
-    // 3. Real 7-Day Volume Trend (Past 7 days)
-    const daysName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // 3. Dynamic Volume Trend by Timeframe
+    const timeframe = req.query.timeframe || '7d';
     const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const recentWeekEntries = await Entry.find({ createdAt: { $gte: sevenDaysAgo } });
+    let startDate;
+    let chartDays = [];
 
-    const volumeByDayMap = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
-    recentWeekEntries.forEach((e) => {
-      const d = daysName[new Date(e.createdAt).getDay()];
-      volumeByDayMap[d] = (volumeByDayMap[d] || 0) + 1;
-    });
+    if (timeframe === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const todayEntries = await Entry.find({ createdAt: { $gte: startDate } });
+      const blocks = ['12AM', '4AM', '8AM', '12PM', '4PM', '8PM'];
+      const blockCounts = [0, 0, 0, 0, 0, 0];
+      todayEntries.forEach((e) => {
+        const hour = new Date(e.createdAt).getHours();
+        const bIdx = Math.min(5, Math.floor(hour / 4));
+        blockCounts[bIdx]++;
+      });
+      chartDays = blocks.map((b, i) => ({ day: b, count: blockCounts[i] }));
+    } else if (timeframe === '15d') {
+      startDate = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+      const entries15 = await Entry.find({ createdAt: { $gte: startDate } });
+      const dayMap = {};
+      for (let i = 14; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const label = `${d.getMonth() + 1}/${d.getDate()}`;
+        dayMap[label] = 0;
+      }
+      entries15.forEach((e) => {
+        const d = new Date(e.createdAt);
+        const label = `${d.getMonth() + 1}/${d.getDate()}`;
+        if (dayMap[label] !== undefined) dayMap[label]++;
+      });
+      chartDays = Object.keys(dayMap).map((k) => ({ day: k, count: dayMap[k] }));
+    } else if (timeframe === '30d') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const entries30 = await Entry.find({ createdAt: { $gte: startDate } });
+      const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Current'];
+      const weekCounts = [0, 0, 0, 0, 0];
+      entries30.forEach((e) => {
+        const diffDays = Math.floor((now.getTime() - new Date(e.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+        const wIdx = Math.min(4, Math.max(0, 4 - Math.floor(diffDays / 7)));
+        weekCounts[wIdx]++;
+      });
+      chartDays = weeks.map((w, i) => ({ day: w, count: weekCounts[i] }));
+    } else if (timeframe === 'all') {
+      startDate = new Date(0);
+      const allEntries = await Entry.find({});
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthCounts = new Array(12).fill(0);
+      allEntries.forEach((e) => {
+        const m = new Date(e.createdAt).getMonth();
+        monthCounts[m]++;
+      });
+      chartDays = months.map((m, i) => ({ day: m, count: monthCounts[i] }));
+    } else {
+      // 7d (Default)
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const daysName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const recentWeekEntries = await Entry.find({ createdAt: { $gte: startDate } });
+      const volumeByDayMap = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
+      recentWeekEntries.forEach((e) => {
+        const d = daysName[new Date(e.createdAt).getDay()];
+        volumeByDayMap[d] = (volumeByDayMap[d] || 0) + 1;
+      });
+      chartDays = daysName.map((d) => ({
+        day: d,
+        count: volumeByDayMap[d],
+      }));
+    }
 
-    const volumeByDay = daysName.map((d) => ({
-      day: d,
-      count: volumeByDayMap[d],
-    }));
+    const periodEntryCount = await Entry.countDocuments({ createdAt: { $gte: startDate } });
 
     // 4. Refunds
     const processedRefunds = await Refund.find({ status: 'PROCESSED' });
@@ -665,8 +719,10 @@ router.get('/analytics', requireSuperAdmin, async (req, res, next) => {
           totalQueued,
           totalFiled,
         },
-        volumeByDay,
-        recentWeekCount: recentWeekEntries.length,
+        volumeByDay: chartDays,
+        recentWeekCount: periodEntryCount,
+        periodEntryCount,
+        timeframe,
         funnel: {
           step1_registered: totalUsers,
           step2_submittedForm: totalSubmitted,
@@ -840,7 +896,7 @@ router.get('/entries', async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip((parseInt(page, 10) - 1) * parseInt(limit, 10))
       .limit(parseInt(limit, 10))
-      .populate('userId', 'email fullName telegramUsername')
+      .populate('userId', 'email fullName telegramUsername googleId authProvider phone')
       .populate('lockedBy', 'username');
 
     const list = await Promise.all(
@@ -858,6 +914,9 @@ router.get('/entries', async (req, res, next) => {
           }
         }
 
+        const isGoogle = !!(e.userId?.googleId || e.userId?.authProvider === 'google');
+        const applicantPhone = primary?.phone || payment?.claimedSenderPhone || e.userId?.phone || null;
+
         return {
           id: e._id,
           uniqueReference: e.uniqueReference,
@@ -866,6 +925,9 @@ router.get('/entries', async (req, res, next) => {
             ? `${primary.name.firstName || ''} ${primary.name.lastName || ''}`.trim()
             : (e.userId?.fullName || 'N/A'),
           applicantEmail: primary?.email || e.userId?.email || 'N/A',
+          applicantPhone,
+          authProvider: isGoogle ? 'google' : (e.userId?.authProvider || 'manual'),
+          isGoogle,
           gender: primary?.gender || 'N/A',
           birthDate: primary?.birthDate || null,
           education: primary?.educationLevel || 'N/A',
@@ -876,6 +938,7 @@ router.get('/entries', async (req, res, next) => {
           paymentProvider: payment?.provider || null,
           claimedTransactionCode: payment?.claimedTransactionCode || null,
           primaryPhotoUrl,
+          primaryPhotoKey: primary?.photoKey || null,
           confirmationNumber: e.getConfirmationNumber ? e.getConfirmationNumber() : null,
           paymentApprovedAt: e.paymentApprovedAt,
           filedAt: e.filedAt,
@@ -904,7 +967,7 @@ router.get('/entries', async (req, res, next) => {
  */
 router.get('/entries/:entryId/full-data', async (req, res, next) => {
   try {
-    const entry = await Entry.findById(req.params.entryId).populate('userId', 'email fullName telegramUsername');
+    const entry = await Entry.findById(req.params.entryId).populate('userId', 'email fullName telegramUsername googleId authProvider phone');
     if (!entry) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry not found' } });
     }
@@ -918,11 +981,14 @@ router.get('/entries/:entryId/full-data', async (req, res, next) => {
       try {
         const url = await getPresignedDownloadUrl(formData.primary.photoKey);
         formData.primary.photoDownloadUrl = url;
+        const filename = `photo_primary_${entry.uniqueReference}.jpg`;
         photos.push({
           role: 'Primary Applicant',
           name: `${formData.primary.name?.firstName || ''} ${formData.primary.name?.lastName || ''}`.trim(),
           photoUrl: url,
-          filename: `photo_primary_${entry.uniqueReference}.jpg`,
+          downloadUrl: `/api/v1/admin/download-photo?key=${encodeURIComponent(formData.primary.photoKey)}&filename=${filename}`,
+          photoKey: formData.primary.photoKey,
+          filename,
         });
       } catch (e) {
         console.warn('Presigned URL error for primary photo:', e.message);
@@ -933,11 +999,14 @@ router.get('/entries/:entryId/full-data', async (req, res, next) => {
       try {
         const url = await getPresignedDownloadUrl(formData.spouse.photoKey);
         formData.spouse.photoDownloadUrl = url;
+        const filename = `photo_spouse_${entry.uniqueReference}.jpg`;
         photos.push({
           role: 'Spouse',
           name: `${formData.spouse.name?.firstName || ''} ${formData.spouse.name?.lastName || ''}`.trim(),
           photoUrl: url,
-          filename: `photo_spouse_${entry.uniqueReference}.jpg`,
+          downloadUrl: `/api/v1/admin/download-photo?key=${encodeURIComponent(formData.spouse.photoKey)}&filename=${filename}`,
+          photoKey: formData.spouse.photoKey,
+          filename,
         });
       } catch (e) {
         console.warn('Presigned URL error for spouse photo:', e.message);
@@ -951,11 +1020,14 @@ router.get('/entries/:entryId/full-data', async (req, res, next) => {
           try {
             const url = await getPresignedDownloadUrl(child.photoKey);
             child.photoDownloadUrl = url;
+            const filename = `photo_child_${i + 1}_${entry.uniqueReference}.jpg`;
             photos.push({
               role: `Child #${i + 1}`,
               name: `${child.name?.firstName || ''} ${child.name?.lastName || ''}`.trim(),
               photoUrl: url,
-              filename: `photo_child_${i + 1}_${entry.uniqueReference}.jpg`,
+              downloadUrl: `/api/v1/admin/download-photo?key=${encodeURIComponent(child.photoKey)}&filename=${filename}`,
+              photoKey: child.photoKey,
+              filename,
             });
           } catch (e) {
             console.warn(`Presigned URL error for child ${i + 1} photo:`, e.message);
@@ -965,6 +1037,26 @@ router.get('/entries/:entryId/full-data', async (req, res, next) => {
     }
 
     const payment = await Payment.findOne({ entryId: entry._id }).sort({ createdAt: -1 });
+
+    // Safe fallback for draft/incomplete applications
+    const resolvedFormData = formData || {
+      primary: {
+        name: {
+          firstName: entry.userId?.fullName?.split(' ')[0] || 'Draft',
+          lastName: entry.userId?.fullName?.split(' ').slice(1).join(' ') || 'Applicant',
+        },
+        email: entry.userId?.email || 'N/A',
+        phone: entry.userId?.phone || payment?.claimedSenderPhone || 'Not provided yet',
+        gender: 'N/A',
+        birthCountry: 'Ethiopia',
+        eligibilityCountry: 'Ethiopia',
+        maritalStatus: 'UNMARRIED',
+        childrenCount: 0,
+        isDraft: true,
+      },
+      spouse: null,
+      children: [],
+    };
 
     return res.json({
       success: true,
@@ -980,7 +1072,7 @@ router.get('/entries/:entryId/full-data', async (req, res, next) => {
           createdAt: entry.createdAt,
           user: entry.userId,
         },
-        formData,
+        formData: resolvedFormData,
         payment,
         photos,
       },
@@ -1055,12 +1147,28 @@ router.get('/users', requireSuperAdmin, async (req, res, next) => {
         );
         const isPaid = !!(hasApprovedPayment || hasPaidEntry);
 
+        let phone = u.phone || null;
+        if (!phone && entries.length > 0) {
+          const entryIds = entries.map((e) => e._id);
+          const fDoc = await FormData.findOne({ entryId: { $in: entryIds } });
+          if (fDoc) {
+            try {
+              const fData = fDoc.getDecryptedData();
+              if (fData?.primary?.phone) phone = fData.primary.phone;
+            } catch (err) {}
+          }
+        }
+
+        const isGoogle = !!(u.googleId || u.authProvider === 'google');
+
         return {
           id: u._id,
           email: u.email || 'N/A',
           fullName: u.fullName || 'N/A',
+          phone: phone || null,
           telegramUsername: u.telegramUsername || null,
-          authProvider: u.authProvider,
+          authProvider: isGoogle ? 'google' : 'manual',
+          isGoogle,
           userType: isPaid ? 'PAID' : 'NORMAL',
           isPaid,
           createdAt: u.createdAt,
@@ -1184,6 +1292,165 @@ router.get('/recent-activity', async (req, res, next) => {
     return res.json({
       success: true,
       data: activities.slice(0, 15),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/v1/admin/download-photo
+ * Proxy entrant photo download with forced Content-Type: image/jpeg and .jpg extension
+ * Guarantees operating systems (Windows, Mac, mobile) never misidentify as Word documents
+ */
+router.get('/download-photo', async (req, res, next) => {
+  try {
+    const { key, filename = 'entrant_photo.jpg' } = req.query;
+    if (!key) return res.status(400).send('Missing photo key parameter');
+
+    const downloadUrl = await getPresignedDownloadUrl(key);
+    if (!downloadUrl) return res.status(404).send('Photo not found');
+
+    const cleanFilename = filename.toLowerCase().endsWith('.jpg') || filename.toLowerCase().endsWith('.jpeg')
+      ? filename
+      : `${filename}.jpg`;
+
+    try {
+      const photoRes = await fetch(downloadUrl);
+      if (photoRes.ok) {
+        const buffer = await photoRes.arrayBuffer();
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.send(Buffer.from(buffer));
+      }
+    } catch (fetchErr) {
+      console.warn('Direct fetch failed, redirecting to presigned download URL:', fetchErr.message);
+    }
+
+    return res.redirect(downloadUrl);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/v1/admin/phone-directory
+ * High-performance aggregation of all registered users with their phone numbers,
+ * payment status, and registration origin (Google vs Manual)
+ */
+router.get('/phone-directory', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { search, filter = 'ALL' } = req.query;
+
+    const [users, entries, formDocs, payments] = await Promise.all([
+      User.find({}).sort({ createdAt: -1 }),
+      Entry.find({}),
+      FormData.find({}),
+      Payment.find({}),
+    ]);
+
+    // Map entryId -> decrypted primary phone & name
+    const entryPhoneMap = new Map();
+    for (const doc of formDocs) {
+      try {
+        const data = doc.getDecryptedData();
+        if (data?.primary?.phone) {
+          entryPhoneMap.set(String(doc.entryId), {
+            phone: data.primary.phone,
+            name: `${data.primary.name?.firstName || ''} ${data.primary.name?.lastName || ''}`.trim(),
+          });
+        }
+      } catch (e) {}
+    }
+
+    // Map userId -> entries
+    const userEntriesMap = new Map();
+    for (const e of entries) {
+      const uId = String(e.userId);
+      if (!userEntriesMap.has(uId)) userEntriesMap.set(uId, []);
+      userEntriesMap.get(uId).push(e);
+    }
+
+    // Map userId -> payments
+    const userPaymentsMap = new Map();
+    for (const p of payments) {
+      const uId = String(p.userId);
+      if (!userPaymentsMap.has(uId)) userPaymentsMap.set(uId, []);
+      userPaymentsMap.get(uId).push(p);
+    }
+
+    let directory = users.map((u) => {
+      const uId = String(u._id);
+      const uEntries = userEntriesMap.get(uId) || [];
+      const uPayments = userPaymentsMap.get(uId) || [];
+
+      let phone = null;
+      let entrantName = null;
+      for (const e of uEntries) {
+        const phoneInfo = entryPhoneMap.get(String(e._id));
+        if (phoneInfo?.phone) {
+          phone = phoneInfo.phone;
+          entrantName = phoneInfo.name;
+          break;
+        }
+      }
+
+      if (!phone) {
+        for (const p of uPayments) {
+          if (p.claimedSenderPhone) {
+            phone = p.claimedSenderPhone;
+            break;
+          }
+        }
+      }
+
+      const hasApprovedPayment = uPayments.some((p) => p.status === 'APPROVED');
+      const hasPaidEntry = uEntries.some((e) => ['QUEUED', 'FILING_IN_PROGRESS', 'CONFIRMED', 'FILED'].includes(e.status));
+      const isPaid = hasApprovedPayment || hasPaidEntry;
+      const isGoogle = !!(u.googleId || u.authProvider === 'google');
+
+      return {
+        id: u._id,
+        name: entrantName || u.fullName || u.email?.split('@')[0] || 'Registered User',
+        email: u.email || 'N/A',
+        phone: phone || null,
+        authProvider: isGoogle ? 'google' : 'manual',
+        isGoogle,
+        isPaid,
+        status: isPaid ? 'PAID' : (uEntries.length > 0 ? uEntries[0].status : 'REGISTERED_NO_FORM'),
+        entriesCount: uEntries.length,
+        latestRef: uEntries[0]?.uniqueReference || null,
+        joinedAt: u.createdAt,
+      };
+    });
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      directory = directory.filter(
+        (item) =>
+          item.name.toLowerCase().includes(q) ||
+          item.email.toLowerCase().includes(q) ||
+          (item.phone && item.phone.toLowerCase().includes(q)) ||
+          (item.latestRef && item.latestRef.toLowerCase().includes(q))
+      );
+    }
+
+    if (filter === 'HAS_PHONE') {
+      directory = directory.filter((item) => !!item.phone);
+    } else if (filter === 'PAID') {
+      directory = directory.filter((item) => item.isPaid);
+    } else if (filter === 'UNPAID') {
+      directory = directory.filter((item) => !item.isPaid);
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        total: directory.length,
+        totalWithPhone: directory.filter((d) => d.phone).length,
+        users: directory,
+      },
     });
   } catch (err) {
     next(err);

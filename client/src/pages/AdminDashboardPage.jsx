@@ -42,12 +42,13 @@ import {
   RefreshCw,
   FileCheck,
   Menu,
-  Phone
+  Phone,
+  Copy
 } from 'lucide-react';
 
 export default function AdminDashboardPage({ onNavigate }) {
   // Navigation & Drawer State
-  const [activeNav, setActiveNav] = useState('overview'); // 'overview' | 'filing' | 'tickets' | 'clients' | 'reports' | '2fa'
+  const [activeNav, setActiveNav] = useState('overview'); // 'overview' | 'filing' | 'tickets' | 'clients' | 'phones' | 'reports' | '2fa'
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [ticketSubFilter, setTicketSubFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'QUEUED' | 'CONFIRMED'
   const [userTypeFilter, setUserTypeFilter] = useState('ALL'); // 'ALL' | 'PAID' | 'NORMAL'
@@ -58,12 +59,16 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [payments, setPayments] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [activityFeed, setActivityFeed] = useState([]);
+  const [phoneDirectory, setPhoneDirectory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [activityTab, setActivityTab] = useState('today'); // 'today' | 'yesterday' | 'week'
-  const [timeframe, setTimeframe] = useState('Last 7 Days');
+  const [timeframe, setTimeframe] = useState('7d'); // 'today' | '7d' | '15d' | '30d' | 'all'
+  const [timeframeDropdownOpen, setTimeframeDropdownOpen] = useState(false);
+  const [phoneFilter, setPhoneFilter] = useState('ALL'); // 'ALL' | 'HAS_PHONE' | 'PAID' | 'UNPAID'
+  const [phoneSearch, setPhoneSearch] = useState('');
 
   // Modals
   const [selectedEntryForForm, setSelectedEntryForForm] = useState(null);
@@ -99,15 +104,16 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [isApplicantDataExpanded, setIsApplicantDataExpanded] = useState(true);
 
   // Load Real Data from Backend
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (currentTimeframe = timeframe) => {
     try {
       setLoading(true);
-      const [entriesRes, usersRes, paymentsRes, analyticsRes, activityRes] = await Promise.all([
+      const [entriesRes, usersRes, paymentsRes, analyticsRes, activityRes, phoneRes] = await Promise.all([
         apiRequest('/admin/entries?limit=100').catch(() => ({ data: { entries: [] } })),
         apiRequest('/admin/users?limit=100').catch(() => ({ data: { users: [] } })),
         apiRequest('/admin/payments?status=PENDING_VERIFICATION').catch(() => ({ data: [] })),
-        apiRequest('/admin/analytics').catch(() => ({ data: null })),
+        apiRequest(`/admin/analytics?timeframe=${currentTimeframe}`).catch(() => ({ data: null })),
         apiRequest('/admin/recent-activity').catch(() => ({ data: [] })),
+        apiRequest('/admin/phone-directory').catch(() => ({ data: { users: [] } })),
       ]);
 
       if (entriesRes.success) setEntries(entriesRes.data?.entries || []);
@@ -115,6 +121,7 @@ export default function AdminDashboardPage({ onNavigate }) {
       if (paymentsRes.success) setPayments(paymentsRes.data || []);
       if (analyticsRes.success) setAnalytics(analyticsRes.data || null);
       if (activityRes.success) setActivityFeed(activityRes.data || []);
+      if (phoneRes.success) setPhoneDirectory(phoneRes.data?.users || []);
     } catch (err) {
       console.error('Failed loading admin dashboard data:', err);
     } finally {
@@ -359,27 +366,79 @@ export default function AdminDashboardPage({ onNavigate }) {
       }
 
       for (const item of json.data.photos) {
-        if (!item.photoUrl) continue;
-        try {
-          const pRes = await fetch(item.photoUrl);
-          const blob = await pRes.blob();
-          const bUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = bUrl;
-          a.download = item.filename || `photo_${item.role.toLowerCase().replace(/\s+/g, '_')}.jpg`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(bUrl);
-          await new Promise((r) => setTimeout(r, 400));
-        } catch (e) {
-          window.open(item.photoUrl, '_blank');
-        }
+        const downloadEndpoint = item.downloadUrl || (item.photoKey ? `/api/v1/admin/download-photo?key=${encodeURIComponent(item.photoKey)}&filename=${item.filename}` : item.photoUrl);
+        if (!downloadEndpoint) continue;
+
+        const a = document.createElement('a');
+        a.href = downloadEndpoint;
+        a.download = item.filename || `photo_${entryRef}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        await new Promise((r) => setTimeout(r, 400));
       }
-      setMessage(`✅ All photos for #${entryRef} downloaded successfully.`);
+      setMessage(`✅ All photos for #${entryRef} downloaded as .jpg successfully.`);
     } catch (err) {
       setErrorMessage('Could not download photos: ' + err.message);
     }
+  };
+
+  // Filtered phone directory
+  const filteredPhones = useMemo(() => {
+    return phoneDirectory.filter((item) => {
+      if (phoneFilter === 'HAS_PHONE' && !item.phone) return false;
+      if (phoneFilter === 'PAID' && !item.isPaid) return false;
+      if (phoneFilter === 'UNPAID' && item.isPaid) return false;
+
+      if (phoneSearch.trim()) {
+        const q = phoneSearch.toLowerCase();
+        const matchName = item.name?.toLowerCase().includes(q);
+        const matchPhone = item.phone?.toLowerCase().includes(q);
+        const matchEmail = item.email?.toLowerCase().includes(q);
+        const matchRef = item.latestRef?.toLowerCase().includes(q);
+        return matchName || matchPhone || matchEmail || matchRef;
+      }
+      return true;
+    });
+  }, [phoneDirectory, phoneFilter, phoneSearch]);
+
+  // Copy all phone numbers to clipboard
+  const handleCopyAllPhones = () => {
+    const phones = phoneDirectory.map((p) => p.phone).filter(Boolean);
+    if (phones.length === 0) {
+      alert('No phone numbers available to copy.');
+      return;
+    }
+    navigator.clipboard.writeText(phones.join(', '));
+    setMessage(`📋 Copied ${phones.length} phone numbers to clipboard!`);
+  };
+
+  // Export CSV of registered phones
+  const handleExportPhonesCSV = () => {
+    if (phoneDirectory.length === 0) {
+      alert('No data to export.');
+      return;
+    }
+    const headers = ['Name', 'Phone', 'Email', 'Payment Status', 'Registration Origin', 'Applications Count', 'Joined Date'];
+    const rows = phoneDirectory.map((u) => [
+      `"${(u.name || '').replace(/"/g, '""')}"`,
+      `"${u.phone || 'N/A'}"`,
+      `"${u.email || 'N/A'}"`,
+      `"${u.isPaid ? 'PAID' : 'UNPAID'}"`,
+      `"${u.authProvider === 'google' ? 'Google' : 'Manual'}"`,
+      `"${u.entriesCount || 0}"`,
+      `"${new Date(u.joinedAt).toLocaleString()}"`,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `ethiodv_registered_users_phones_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setMessage(`📥 Exported ${phoneDirectory.length} registered users with phone data to CSV!`);
   };
 
   // Filtered entries list
@@ -394,7 +453,8 @@ export default function AdminDashboardPage({ onNavigate }) {
         const matchRef = item.uniqueReference?.toLowerCase().includes(q);
         const matchName = item.applicantName?.toLowerCase().includes(q);
         const matchEmail = item.applicantEmail?.toLowerCase().includes(q);
-        return matchRef || matchName || matchEmail;
+        const matchPhone = item.applicantPhone?.toLowerCase().includes(q);
+        return matchRef || matchName || matchEmail || matchPhone;
       }
       return true;
     });
@@ -411,7 +471,8 @@ export default function AdminDashboardPage({ onNavigate }) {
         const matchEmail = u.email?.toLowerCase().includes(q);
         const matchName = u.fullName?.toLowerCase().includes(q);
         const matchTg = u.telegramUsername?.toLowerCase().includes(q);
-        return matchEmail || matchName || matchTg;
+        const matchPhone = u.phone?.toLowerCase().includes(q);
+        return matchEmail || matchName || matchTg || matchPhone;
       }
       return true;
     });
@@ -827,6 +888,48 @@ export default function AdminDashboardPage({ onNavigate }) {
             </span>
           </button>
 
+          {/* Phone Directory Link */}
+          <button
+            onClick={() => {
+              setActiveNav('phones');
+              setMobileDrawerOpen(false);
+            }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '9px 12px',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              background: activeNav === 'phones' ? '#f1f5f9' : 'transparent',
+              color: activeNav === 'phones' ? '#0f172a' : '#475569',
+              textAlign: 'left',
+              marginTop: 4,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Phone size={17} color={activeNav === 'phones' ? '#0f172a' : '#64748b'} />
+              <span>Phone Directory</span>
+            </div>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                background: '#ecfdf5',
+                color: '#059669',
+                padding: '1px 7px',
+                borderRadius: 9999,
+                border: '1px solid #a7f3d0',
+              }}
+            >
+              {phoneDirectory.filter((p) => p.phone).length}
+            </span>
+          </button>
+
           {/* Guidelines */}
           <button
             onClick={() => onNavigate('photo-guide')}
@@ -1040,31 +1143,105 @@ export default function AdminDashboardPage({ onNavigate }) {
                 <span>EthioDV</span>
                 <span>/</span>
                 <span style={{ color: '#0f172a', fontWeight: 600 }}>
-                  {activeNav === 'filing' ? 'Filing Station' : activeNav === 'clients' ? 'Clients Directory' : 'Dashboard'}
+                  {activeNav === 'filing' ? 'Filing Station' : activeNav === 'clients' ? 'Clients Directory' : activeNav === 'phones' ? 'Phone Directory' : 'Dashboard'}
                 </span>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '7px 12px',
-                  borderRadius: 8,
-                  border: '1px solid #e2e8f0',
-                  background: '#ffffff',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: '#0f172a',
-                  cursor: 'pointer',
-                }}
-              >
-                <Calendar size={13} color="#64748b" />
-                <span>{timeframe}</span>
-                <ChevronDown size={13} color="#94a3b8" />
-              </button>
+              {/* Interactive Timeframe Dropdown (Today, 7 Days, 15 Days, 30 Days / Month, All Time) */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setTimeframeDropdownOpen((prev) => !prev)}
+                  title="Filter analytics and volume trend"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '7px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Calendar size={13} color="#4f46e5" />
+                  <span>
+                    {timeframe === 'today'
+                      ? 'Today'
+                      : timeframe === '15d'
+                      ? 'Last 15 Days'
+                      : timeframe === '30d'
+                      ? 'Last 30 Days'
+                      : timeframe === 'all'
+                      ? 'All Time'
+                      : 'Last 7 Days'}
+                  </span>
+                  <ChevronDown size={13} color="#94a3b8" />
+                </button>
+
+                {timeframeDropdownOpen && (
+                  <>
+                    <div
+                      onClick={() => setTimeframeDropdownOpen(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: 6,
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: 10,
+                        boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                        padding: 6,
+                        zIndex: 50,
+                        minWidth: 195,
+                      }}
+                    >
+                      {[
+                        { id: 'today', label: 'Today (Hours)' },
+                        { id: '7d', label: 'Last 7 Days (Week)' },
+                        { id: '15d', label: 'Last 15 Days' },
+                        { id: '30d', label: 'Last 30 Days (Month)' },
+                        { id: 'all', label: 'All Time (Full Year)' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => {
+                            setTimeframe(opt.id);
+                            setTimeframeDropdownOpen(false);
+                            loadDashboardData(opt.id);
+                          }}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 12px',
+                            fontSize: 12,
+                            fontWeight: timeframe === opt.id ? 700 : 500,
+                            color: timeframe === opt.id ? '#4f46e5' : '#0f172a',
+                            background: timeframe === opt.id ? '#eef2ff' : 'transparent',
+                            border: 'none',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                          }}
+                        >
+                          <span>{opt.label}</span>
+                          {timeframe === opt.id && <Check size={14} color="#4f46e5" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
 
               <button
                 onClick={() => setActiveNav('tickets')}
@@ -1619,7 +1796,16 @@ export default function AdminDashboardPage({ onNavigate }) {
                     </div>
 
                     <span style={{ fontSize: 12, color: '#64748b' }}>
-                      Past 7 Days: <strong>{analytics?.recentWeekCount ?? entries.length}</strong> created
+                      {timeframe === 'today'
+                        ? 'Today: '
+                        : timeframe === '15d'
+                        ? 'Past 15 Days: '
+                        : timeframe === '30d'
+                        ? 'Past 30 Days: '
+                        : timeframe === 'all'
+                        ? 'All Time: '
+                        : 'Past 7 Days: '}
+                      <strong>{analytics?.periodEntryCount ?? analytics?.recentWeekCount ?? entries.length}</strong> created
                     </span>
                   </div>
 
@@ -1724,11 +1910,15 @@ export default function AdminDashboardPage({ onNavigate }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Clock size={16} color="#0f172a" />
                       <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>
-                        {activeNav === 'clients' ? 'Clients Directory' : 'Applicant Queue & Operations'}
+                        {activeNav === 'clients'
+                          ? 'Clients Directory'
+                          : activeNav === 'phones'
+                          ? 'Registered Users Phone Directory'
+                          : 'Applicant Queue & Operations'}
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', background: '#f1f5f9', padding: 2, borderRadius: 8 }}>
+                    <div style={{ display: 'flex', background: '#f1f5f9', padding: 2, borderRadius: 8, flexWrap: 'wrap', gap: 2 }}>
                       <button
                         onClick={() => setActiveNav('overview')}
                         style={{
@@ -1758,6 +1948,25 @@ export default function AdminDashboardPage({ onNavigate }) {
                         }}
                       >
                         Clients / Users ({usersList.length})
+                      </button>
+                      <button
+                        onClick={() => setActiveNav('phones')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: activeNav === 'phones' ? '#0f172a' : 'transparent',
+                          color: activeNav === 'phones' ? '#ffffff' : '#64748b',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                      >
+                        <Phone size={12} />
+                        <span>Phone Directory ({phoneDirectory.filter((p) => p.phone).length})</span>
                       </button>
                       <button
                         onClick={() => {
@@ -1796,7 +2005,256 @@ export default function AdminDashboardPage({ onNavigate }) {
 
                 {/* Table with responsive horizontal scroll */}
                 <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                  {activeNav === 'clients' ? (
+                  {activeNav === 'phones' ? (
+                    <div>
+                      {/* Top Controls for Phone Directory */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: 12,
+                          padding: '12px 14px',
+                          background: '#f8fafc',
+                          borderRadius: 10,
+                          marginBottom: 14,
+                          border: '1px solid #e2e8f0',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginRight: 4 }}>
+                            Filter Directory:
+                          </span>
+                          {[
+                            { id: 'ALL', label: `All Accounts (${phoneDirectory.length})` },
+                            { id: 'HAS_PHONE', label: `With Phone (${phoneDirectory.filter((p) => p.phone).length})` },
+                            { id: 'PAID', label: `Paid (${phoneDirectory.filter((p) => p.isPaid).length})` },
+                            { id: 'UNPAID', label: `Unpaid (${phoneDirectory.filter((p) => !p.isPaid).length})` },
+                          ].map((f) => (
+                            <button
+                              key={f.id}
+                              onClick={() => setPhoneFilter(f.id)}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: phoneFilter === f.id ? 700 : 500,
+                                border: '1px solid',
+                                borderColor: phoneFilter === f.id ? '#0f172a' : '#cbd5e1',
+                                background: phoneFilter === f.id ? '#0f172a' : '#ffffff',
+                                color: phoneFilter === f.id ? '#ffffff' : '#475569',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 6, padding: '5px 8px', gap: 6 }}>
+                            <Search size={13} color="#94a3b8" />
+                            <input
+                              type="text"
+                              placeholder="Search phone, name, email..."
+                              value={phoneSearch}
+                              onChange={(e) => setPhoneSearch(e.target.value)}
+                              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 12, color: '#0f172a', width: 170 }}
+                            />
+                            {phoneSearch && (
+                              <button onClick={() => setPhoneSearch('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}>
+                                <X size={12} color="#94a3b8" />
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={handleCopyAllPhones}
+                            title="Copy all available phone numbers comma-separated"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              borderRadius: 6,
+                              background: '#10b981',
+                              color: '#ffffff',
+                              border: 'none',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Copy size={13} />
+                            <span>Copy All Phones</span>
+                          </button>
+
+                          <button
+                            onClick={handleExportPhonesCSV}
+                            title="Export contacts as CSV spreadsheet"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              borderRadius: 6,
+                              background: '#ffffff',
+                              color: '#0f172a',
+                              border: '1px solid #cbd5e1',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Download size={13} />
+                            <span>Export CSV</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Phone Directory Table */}
+                      <table style={{ width: '100%', minWidth: 850, borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
+                            <th style={{ padding: '10px 12px', width: 40 }}>#</th>
+                            <th style={{ padding: '10px 12px' }}>Entrant / User</th>
+                            <th style={{ padding: '10px 12px' }}>Primary Phone Number</th>
+                            <th style={{ padding: '10px 12px' }}>Email Address</th>
+                            <th style={{ padding: '10px 12px' }}>Registration Origin</th>
+                            <th style={{ padding: '10px 12px' }}>Payment Status</th>
+                            <th style={{ padding: '10px 12px' }}>Joined Date</th>
+                            <th style={{ padding: '10px 12px', textAlign: 'right' }}>Direct Reach</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredPhones.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} style={{ textAlign: 'center', padding: '36px 0', color: '#94a3b8' }}>
+                                No registered users found matching the filter or search criteria.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredPhones.map((p, idx) => (
+                              <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>
+                                  {idx + 1}
+                                </td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
+                                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                                    {p.latestRef ? `#${p.latestRef}` : `${p.entriesCount} entries`}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  {p.phone ? (
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                      <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#059669', fontSize: 13, background: '#ecfdf5', padding: '3px 8px', borderRadius: 6, border: '1px solid #a7f3d0' }}>
+                                        {p.phone}
+                                      </span>
+                                      <button
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(p.phone);
+                                          setMessage(`📋 Copied ${p.phone} to clipboard!`);
+                                        }}
+                                        title="Copy Phone"
+                                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: '#64748b' }}
+                                      >
+                                        <Copy size={13} />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
+                                      No phone registered
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '10px 12px', color: '#475569' }}>
+                                  {p.email}
+                                </td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  {p.isGoogle ? (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                                      🔵 Google OAuth
+                                    </span>
+                                  ) : (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                                      ✉️ Manual Email
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  {p.isPaid ? (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#dcfce7', color: '#15803d' }}>
+                                      <CheckCircle2 size={11} /> Paid User
+                                    </span>
+                                  ) : (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+                                      <Clock size={11} /> Not Paid Yet
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 12 }}>
+                                  <div>{new Date(p.joinedAt).toLocaleDateString()}</div>
+                                  <div style={{ fontSize: 10, color: '#94a3b8' }}>
+                                    {new Date(p.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                  {p.phone ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                                      <a
+                                        href={`tel:${p.phone.replace(/[^0-9+]/g, '')}`}
+                                        title="Call Phone"
+                                        style={{
+                                          padding: '4px 8px',
+                                          borderRadius: 6,
+                                          border: '1px solid #cbd5e1',
+                                          background: '#ffffff',
+                                          color: '#0f172a',
+                                          textDecoration: 'none',
+                                          fontSize: 11,
+                                          fontWeight: 600,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 3,
+                                        }}
+                                      >
+                                        <Phone size={11} /> Call
+                                      </a>
+                                      <button
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(p.phone);
+                                          setMessage(`📋 Copied ${p.phone} to clipboard!`);
+                                        }}
+                                        title="Copy Phone"
+                                        style={{
+                                          padding: '4px 8px',
+                                          borderRadius: 6,
+                                          border: '1px solid #cbd5e1',
+                                          background: '#f8fafc',
+                                          color: '#0f172a',
+                                          fontSize: 11,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 3,
+                                        }}
+                                      >
+                                        <Copy size={11} /> Copy
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: 11, color: '#cbd5e1' }}>—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : activeNav === 'clients' ? (
                     <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
@@ -1829,10 +2287,40 @@ export default function AdminDashboardPage({ onNavigate }) {
                                     {u.email?.[0]?.toUpperCase() || 'U'}
                                   </div>
                                   <div>
-                                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{u.email}</div>
+                                    <div style={{ fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span>{u.email}</span>
+                                      {u.isGoogle ? (
+                                        <span title="Google OAuth Account" style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                                          🔵 Google
+                                        </span>
+                                      ) : (
+                                        <span title="Manual Email Account" style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                                          ✉️ Manual
+                                        </span>
+                                      )}
+                                    </div>
                                     <div style={{ fontSize: 11, color: '#64748b' }}>
                                       {u.fullName || (u.telegramUsername ? `@${u.telegramUsername}` : 'Applicant')}
                                     </div>
+                                    {u.phone ? (
+                                      <div style={{ fontSize: 11, color: '#059669', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontWeight: 600 }}>
+                                        <Phone size={10} />
+                                        <span>{u.phone}</span>
+                                        <button
+                                          onClick={(evt) => {
+                                            evt.stopPropagation();
+                                            navigator.clipboard.writeText(u.phone);
+                                            setMessage(`📋 Copied ${u.phone} to clipboard!`);
+                                          }}
+                                          title="Copy Phone"
+                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: '#94a3b8' }}
+                                        >
+                                          <Copy size={10} />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>No phone on file</div>
+                                    )}
                                   </div>
                                 </div>
                               </td>
@@ -1911,10 +2399,38 @@ export default function AdminDashboardPage({ onNavigate }) {
                                   </span>
                                 </td>
                                 <td style={{ padding: '10px 12px' }}>
-                                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{e.applicantName}</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{e.applicantName}</span>
+                                    {e.isGoogle ? (
+                                      <span title="Registered via Google OAuth" style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                                        🔵 Google
+                                      </span>
+                                    ) : (
+                                      <span title="Registered via Manual Email" style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                                        ✉️ Manual
+                                      </span>
+                                    )}
+                                  </div>
                                   <div style={{ fontSize: 11, color: '#64748b' }}>
                                     {e.applicantEmail} • {e.gender === 'M' ? 'Male' : e.gender === 'F' ? 'Female' : 'N/A'}
                                   </div>
+                                  {e.applicantPhone && (
+                                    <div style={{ fontSize: 11, color: '#059669', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontWeight: 600 }}>
+                                      <Phone size={10} />
+                                      <span>{e.applicantPhone}</span>
+                                      <button
+                                        onClick={(evt) => {
+                                          evt.stopPropagation();
+                                          navigator.clipboard.writeText(e.applicantPhone);
+                                          setMessage(`📋 Copied ${e.applicantPhone} to clipboard!`);
+                                        }}
+                                        title="Copy Phone"
+                                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: '#94a3b8' }}
+                                      >
+                                        <Copy size={10} />
+                                      </button>
+                                    </div>
+                                  )}
                                 </td>
                                 <td style={{ padding: '10px 12px' }}>
                                   <span
@@ -1961,7 +2477,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                                     </button>
                                     <button
                                       onClick={() => handleQuickDownloadPhotos(e.id, e.uniqueReference)}
-                                      title="Download Photos"
+                                      title="Download Photos (.jpg)"
                                       style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: 11, cursor: 'pointer' }}
                                     >
                                       <Download size={12} />

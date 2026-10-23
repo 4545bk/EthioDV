@@ -7,6 +7,8 @@ export default function AdminFullFormModal({ entryId, onClose }) {
   const [error, setError] = useState(null);
   const [downloadingPhotos, setDownloadingPhotos] = useState(false);
 
+  const [embeddedPhotos, setEmbeddedPhotos] = useState({});
+
   React.useEffect(() => {
     async function loadData() {
       try {
@@ -21,6 +23,24 @@ export default function AdminFullFormModal({ entryId, onClose }) {
         const json = await res.json();
         if (json.success) {
           setData(json.data);
+
+          // Convert photos to data URIs so they permanently embed in printed PDF
+          if (json.data?.photos?.length) {
+            json.data.photos.forEach(async (p) => {
+              if (!p.photoUrl) return;
+              try {
+                const pRes = await fetch(p.photoUrl);
+                const blob = await pRes.blob();
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  setEmbeddedPhotos((prev) => ({ ...prev, [p.role]: reader.result }));
+                };
+                reader.readAsDataURL(blob);
+              } catch (e) {
+                // Keep direct URL if fetch blocked
+              }
+            });
+          }
         } else {
           setError(json.error?.message || 'Failed to load form details');
         }
@@ -50,24 +70,16 @@ export default function AdminFullFormModal({ entryId, onClose }) {
     try {
       setDownloadingPhotos(true);
       for (const item of data.photos) {
-        if (!item.photoUrl) continue;
-        try {
-          const res = await fetch(item.photoUrl);
-          const blob = await res.blob();
-          const blobUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = item.filename || `photo_${item.role.toLowerCase().replace(/\s+/g, '_')}.jpg`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(blobUrl);
-          // Small delay between multiple photo downloads
-          await new Promise((r) => setTimeout(r, 400));
-        } catch (fetchErr) {
-          console.warn('Failed downloading photo via blob, fallback to direct open:', fetchErr);
-          window.open(item.photoUrl, '_blank');
-        }
+        const downloadUrl = item.downloadUrl || (item.photoKey ? `/api/v1/admin/download-photo?key=${encodeURIComponent(item.photoKey)}&filename=${item.filename}` : item.photoUrl);
+        if (!downloadUrl) continue;
+
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = item.filename || `photo_${item.role.toLowerCase().replace(/\s+/g, '_')}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        await new Promise((r) => setTimeout(r, 400));
       }
     } finally {
       setDownloadingPhotos(false);
@@ -350,10 +362,11 @@ export default function AdminFullFormModal({ entryId, onClose }) {
                         position: 'relative',
                       }}
                     >
-                      {primary?.photoDownloadUrl ? (
+                      {(embeddedPhotos['Primary Applicant'] || primary?.photoDownloadUrl) ? (
                         <img
-                          src={primary.photoDownloadUrl}
+                          src={embeddedPhotos['Primary Applicant'] || primary.photoDownloadUrl}
                           alt="Primary Applicant"
+                          crossOrigin="anonymous"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       ) : (
@@ -365,6 +378,25 @@ export default function AdminFullFormModal({ entryId, onClose }) {
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                       <CheckCircle2 size={12} /> 600×600 px Validated
                     </div>
+                    {(primary?.photoKey || primary?.photoDownloadUrl) && (
+                      <div style={{ marginTop: 4, textAlign: 'center' }}>
+                        <a
+                          href={primary?.photoKey ? `/api/v1/admin/download-photo?key=${encodeURIComponent(primary.photoKey)}&filename=photo_primary_${entry?.uniqueReference}.jpg` : primary.photoDownloadUrl}
+                          download={`photo_primary_${entry?.uniqueReference}.jpg`}
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: '#4f46e5',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <Download size={11} /> Download JPG
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -658,20 +690,28 @@ export default function AdminFullFormModal({ entryId, onClose }) {
 
       <style>{`
         @media print {
+          @page {
+            size: auto;
+            margin: 10mm;
+          }
           body * {
             visibility: hidden !important;
           }
           #printable-dossier, #printable-dossier * {
             visibility: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
           #printable-dossier {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
-            padding: 20px !important;
+            padding: 10px !important;
             background: #ffffff !important;
             color: #000000 !important;
+            border: none !important;
           }
         }
       `}</style>
