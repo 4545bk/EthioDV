@@ -3068,83 +3068,22 @@ export default function AdminDashboardPage({ onNavigate }) {
               </div>
 
               {/* ============================================================== */}
-              {/* REVENUE SUMMARY CARDS: TOTAL, BANK TRANSFER & TELEBIRR         */}
+              {/* REVENUE SUMMARY CARD: TOTAL BANK TRANSFER & MOBILE (TOGETHER) */}
               {/* (POSITIONED UNDER TRANSACTION LIST & BEFORE VOLUME TREND)      */}
               {/* ============================================================== */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: 16,
-                  margin: '0 0 20px 0',
-                }}
-              >
-                {/* 1. Combined Total Verified Revenue Card */}
+              <div style={{ margin: '0 0 20px 0' }}>
                 <div
                   onClick={() => setDepositorModalType('ALL')}
-                  style={{
-                    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-                    border: '1px solid #86efac',
-                    borderRadius: 14,
-                    padding: '20px 22px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: 180,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(5, 150, 105, 0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#047857' }}>
-                      <CheckCircle2 size={18} />
-                    </div>
-                    <span style={{ fontSize: 11, background: '#bbf7d0', color: '#065f46', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      💰 Total Verified Revenue
-                    </span>
-                  </div>
-
-                  <div style={{ margin: '14px 0 10px 0' }}>
-                    <div style={{ fontSize: 30, fontWeight: 800, color: '#065f46', letterSpacing: -0.5 }}>
-                      {totalVerifiedRevenueETB.toLocaleString()} ETB
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#047857', marginTop: 2 }}>
-                      Combined Verified Revenue
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      From {totalVerifiedDepositsCount} verified deposits
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid #86efac', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
-                    <span style={{ color: '#047857', fontWeight: 600 }}>✓ Bank Transfer + Telebirr Total</span>
-                    <span style={{ color: '#065f46', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      👆 Click to view all depositors
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2. Bank Transfer Revenue Card */}
-                <div
-                  onClick={() => setDepositorModalType('BANK_TRANSFER')}
                   style={{
                     background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
                     border: '1px solid #bbf7d0',
                     borderRadius: 14,
-                    padding: '20px 22px',
+                    padding: '20px 24px',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
+                    maxWidth: 420,
                     minHeight: 180,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -3169,73 +3108,19 @@ export default function AdminDashboardPage({ onNavigate }) {
 
                   <div style={{ margin: '14px 0 10px 0' }}>
                     <div style={{ fontSize: 30, fontWeight: 800, color: '#065f46', letterSpacing: -0.5 }}>
-                      {bankTransferTotalETB.toLocaleString()} ETB
+                      {totalVerifiedRevenueETB.toLocaleString()} ETB
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginTop: 2 }}>
                       Bank Transfer Revenue
                     </div>
                     <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      From {verifiedBankTransactions.length} verified deposits
+                      From {totalVerifiedDepositsCount} verified deposits
                     </div>
                   </div>
 
                   <div style={{ borderTop: '1px solid #bbf7d0', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
                     <span style={{ color: '#059669', fontWeight: 600 }}>✓ Excludes test accounts</span>
                     <span style={{ color: '#047857', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      👆 Click to view depositors
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3. Telebirr Revenue Card */}
-                <div
-                  onClick={() => setDepositorModalType('TELEBIRR')}
-                  style={{
-                    background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-                    border: '1px solid #fde68a',
-                    borderRadius: 14,
-                    padding: '20px 22px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: 180,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(217, 119, 6, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
-                      <Zap size={18} />
-                    </div>
-                    <span style={{ fontSize: 11, background: '#fef3c7', color: '#b45309', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      📱 Telebirr
-                    </span>
-                  </div>
-
-                  <div style={{ margin: '14px 0 10px 0' }}>
-                    <div style={{ fontSize: 30, fontWeight: 800, color: '#92400e', letterSpacing: -0.5 }}>
-                      {telebirrTotalETB.toLocaleString()} ETB
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#d97706', marginTop: 2 }}>
-                      Telebirr Revenue
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      From {verifiedTelebirrTransactions.length} verified deposits
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid #fde68a', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
-                    <span style={{ color: '#b45309', fontWeight: 600 }}>✓ Verified mobile deposits</span>
-                    <span style={{ color: '#b45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                       👆 Click to view depositors
                     </span>
                   </div>
@@ -4142,43 +4027,65 @@ export default function AdminDashboardPage({ onNavigate }) {
             </div>
 
             {/* Modal Actions */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #e2e8f0' }}>
-              <button
-                type="button"
-                onClick={() => setPreviewReceiptPayment(null)}
-                style={{ padding: '9px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155', cursor: 'pointer' }}
-              >
-                Close
-              </button>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = previewReceiptPayment;
-                    setPreviewReceiptPayment(null);
-                    setRejectModalPayment({ id: p.paymentId, entryId: p.entryId || p.id, entryRef: p.entryRef || p.uniqueReference, amountETB: p.amountETB || 1000, isEntry: !p.paymentId });
-                  }}
-                  style={{ padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#ef4444', color: '#ffffff', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                  <XCircle size={14} /> Reject Deposit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = previewReceiptPayment;
-                    setPreviewReceiptPayment(null);
-                    if (p.paymentId) {
-                      handleApprovePayment(p.paymentId, p.entryRef || p.uniqueReference);
-                    } else {
-                      handleApproveEntryPayment(p.entryId || p.id, p.entryRef || p.uniqueReference);
-                    }
-                  }}
-                  style={{ padding: '9px 20px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#10b981', color: '#ffffff', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                  <CheckCircle2 size={14} /> Accept & Queue Entry
-                </button>
-              </div>
-            </div>
+            {(() => {
+              const status = String(previewReceiptPayment.status || previewReceiptPayment.paymentStatus || '').toUpperCase();
+              const entryStatus = String(previewReceiptPayment.entryStatus || previewReceiptPayment.status || '').toUpperCase();
+              const isApproved = status === 'APPROVED' || ['QUEUED', 'FILING_IN_PROGRESS', 'CONFIRMED', 'FILED'].includes(entryStatus);
+              const isRejected = status === 'REJECTED' || status === 'PAYMENT_REJECTED';
+
+              return (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid #e2e8f0', gap: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewReceiptPayment(null)}
+                    style={{ padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155', cursor: 'pointer' }}
+                  >
+                    Close
+                  </button>
+
+                  {isApproved ? (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: '#dcfce7', border: '1px solid #bbf7d0', color: '#15803d', fontSize: 12, fontWeight: 700 }}>
+                      <CheckCircle2 size={15} />
+                      <span>Approved & Queued</span>
+                    </div>
+                  ) : isRejected ? (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: '#fee2e2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 12, fontWeight: 700 }}>
+                      <XCircle size={15} />
+                      <span>Deposit Rejected</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const p = previewReceiptPayment;
+                          setPreviewReceiptPayment(null);
+                          setRejectModalPayment({ id: p.paymentId, entryId: p.entryId || p.id, entryRef: p.entryRef || p.uniqueReference, amountETB: p.amountETB || 1000, isEntry: !p.paymentId });
+                        }}
+                        style={{ padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#ef4444', color: '#ffffff', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <XCircle size={14} /> Reject Deposit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const p = previewReceiptPayment;
+                          setPreviewReceiptPayment(null);
+                          if (p.paymentId) {
+                            handleApprovePayment(p.paymentId, p.entryRef || p.uniqueReference);
+                          } else {
+                            handleApproveEntryPayment(p.entryId || p.id, p.entryRef || p.uniqueReference);
+                          }
+                        }}
+                        style={{ padding: '9px 20px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#10b981', color: '#ffffff', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <CheckCircle2 size={14} /> Accept & Queue Entry
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -4314,25 +4221,11 @@ export default function AdminDashboardPage({ onNavigate }) {
 
       {/* Modal 6: Ranked Depositors List Modal (Exact replica of Image 2) */}
       {depositorModalType && (() => {
-        const isAll = depositorModalType === 'ALL';
-        const isBank = depositorModalType === 'BANK_TRANSFER';
-        const list = isAll
-          ? combinedTransactions.filter((t) => t.status === 'APPROVED' && !t.isExcluded)
-          : isBank
-          ? verifiedBankTransactions
-          : verifiedTelebirrTransactions;
-        const total = isAll
-          ? totalVerifiedRevenueETB
-          : isBank
-          ? bankTransferTotalETB
-          : telebirrTotalETB;
-        const title = isAll
-          ? 'All Verified Deposits (Bank & Telebirr)'
-          : isBank
-          ? 'Bank Transfer Deposits'
-          : 'Telebirr Mobile Deposits';
-        const icon = isAll ? '💰' : isBank ? '🏦' : '📱';
-        const headerBg = isAll ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : isBank ? '#10b981' : '#f59e0b';
+        const list = combinedTransactions.filter((t) => t.status === 'APPROVED' && !t.isExcluded);
+        const total = totalVerifiedRevenueETB;
+        const title = 'Bank Transfer Deposits';
+        const icon = '🏦';
+        const headerBg = '#10b981';
 
         return (
           <div
