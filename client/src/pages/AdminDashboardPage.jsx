@@ -47,7 +47,8 @@ import {
   Receipt,
   FileText,
   Menu,
-  Ban
+  Ban,
+  CreditCard
 } from 'lucide-react';
 
 export default function AdminDashboardPage({ onNavigate }) {
@@ -63,6 +64,8 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [payments, setPayments] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [txSearchQuery, setTxSearchQuery] = useState('');
+  const [includeRejected, setIncludeRejected] = useState(false);
+  const [depositorModalType, setDepositorModalType] = useState(null); // 'BANK_TRANSFER' | 'TELEBIRR' | null
   const [isExcludingPaymentId, setIsExcludingPaymentId] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [activityFeed, setActivityFeed] = useState([]);
@@ -890,18 +893,53 @@ export default function AdminDashboardPage({ onNavigate }) {
     return list;
   }, [allTransactions, entries]);
 
-  // Filtered transactions for the search bar
+  // Filtered transactions for the search bar (leaves out rejected deposits by default)
   const displayTransactions = useMemo(() => {
-    if (!txSearchQuery.trim()) return combinedTransactions;
+    let list = combinedTransactions;
+
+    // Leave out rejected deposits unless explicitly included by the admin
+    if (!includeRejected) {
+      list = list.filter((t) => t.status !== 'REJECTED');
+    }
+
+    if (!txSearchQuery.trim()) return list;
     const q = txSearchQuery.toLowerCase().trim();
-    return combinedTransactions.filter((t) => {
+    return list.filter((t) => {
       const u = (t.userName || '').toLowerCase();
       const em = (t.userEmail || '').toLowerCase();
       const code = (t.claimedTransactionCode || t.ocrTxCode || t.entryRef || '').toLowerCase();
       const amt = String(t.amountETB || '');
       return u.includes(q) || em.includes(q) || code.includes(q) || amt.includes(q);
     });
-  }, [combinedTransactions, txSearchQuery]);
+  }, [combinedTransactions, txSearchQuery, includeRejected]);
+
+  // Verified Bank Transfer Deposits (Excludes Telebirr & Excluded)
+  const verifiedBankTransactions = useMemo(() => {
+    return combinedTransactions.filter(
+      (t) =>
+        t.status === 'APPROVED' &&
+        !t.isExcluded &&
+        !['TELEBIRR'].includes(String(t.provider || '').toUpperCase())
+    );
+  }, [combinedTransactions]);
+
+  // Verified Telebirr Deposits
+  const verifiedTelebirrTransactions = useMemo(() => {
+    return combinedTransactions.filter(
+      (t) =>
+        t.status === 'APPROVED' &&
+        !t.isExcluded &&
+        ['TELEBIRR'].includes(String(t.provider || '').toUpperCase())
+    );
+  }, [combinedTransactions]);
+
+  const bankTransferTotalETB = useMemo(() => {
+    return verifiedBankTransactions.reduce((acc, t) => acc + (Number(t.amountETB) || 1000), 0);
+  }, [verifiedBankTransactions]);
+
+  const telebirrTotalETB = useMemo(() => {
+    return verifiedTelebirrTransactions.reduce((acc, t) => acc + (Number(t.amountETB) || 1000), 0);
+  }, [verifiedTelebirrTransactions]);
 
   const primaryFiling = activeFilingData?.formData?.primary;
 
@@ -2679,6 +2717,126 @@ export default function AdminDashboardPage({ onNavigate }) {
               </div>
 
               {/* ============================================================== */}
+              {/* REVENUE CARDS: BANK TRANSFER & TELEBIRR (MATCHING IMAGE 1)     */}
+              {/* ============================================================== */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 16,
+                  margin: '0 0 20px 0',
+                }}
+              >
+                {/* 1. Bank Transfer Revenue Card */}
+                <div
+                  onClick={() => setDepositorModalType('BANK_TRANSFER')}
+                  style={{
+                    background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 14,
+                    padding: '20px 22px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: 180,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(5, 150, 105, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
+                      <CreditCard size={18} />
+                    </div>
+                    <span style={{ fontSize: 11, background: '#dcfce7', color: '#15803d', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      🏦 Bank Transfer
+                    </span>
+                  </div>
+
+                  <div style={{ margin: '14px 0 10px 0' }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: '#065f46', letterSpacing: -0.5 }}>
+                      {bankTransferTotalETB.toLocaleString()} ETB
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginTop: 2 }}>
+                      Bank Transfer Revenue
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                      From {verifiedBankTransactions.length} verified deposits
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #bbf7d0', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                    <span style={{ color: '#059669', fontWeight: 600 }}>✓ Excludes test accounts</span>
+                    <span style={{ color: '#047857', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      👆 Click to view depositors
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Telebirr Revenue Card (Replacing Crypto as requested) */}
+                <div
+                  onClick={() => setDepositorModalType('TELEBIRR')}
+                  style={{
+                    background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                    border: '1px solid #fde68a',
+                    borderRadius: 14,
+                    padding: '20px 22px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: 180,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(217, 119, 6, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
+                      <Zap size={18} />
+                    </div>
+                    <span style={{ fontSize: 11, background: '#fef3c7', color: '#b45309', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      📱 Telebirr
+                    </span>
+                  </div>
+
+                  <div style={{ margin: '14px 0 10px 0' }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: '#92400e', letterSpacing: -0.5 }}>
+                      {telebirrTotalETB.toLocaleString()} ETB
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#d97706', marginTop: 2 }}>
+                      Telebirr Revenue
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                      From {verifiedTelebirrTransactions.length} verified deposits
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #fde68a', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                    <span style={{ color: '#b45309', fontWeight: 600 }}>✓ Verified mobile deposits</span>
+                    <span style={{ color: '#b45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      👆 Click to view depositors
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ============================================================== */}
               {/* TRANSACTION HISTORY & SEARCH (EXACT REPLICA FROM SCREENSHOT)   */}
               {/* ============================================================== */}
               <div
@@ -2691,53 +2849,83 @@ export default function AdminDashboardPage({ onNavigate }) {
                   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
                 }}
               >
-                {/* 1. Full-Width Search Input (Purple magnifying glass) */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    background: '#fcfcfd',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: 10,
-                    padding: '11px 16px',
-                    gap: 12,
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Search size={18} color="#8b5cf6" style={{ flexShrink: 0 }} />
-                  <input
-                    type="text"
-                    placeholder="Search by username, email, or transaction code..."
-                    value={txSearchQuery}
-                    onChange={(e) => setTxSearchQuery(e.target.value)}
+                {/* 1. Search Bar + Include Rejected Button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div
                     style={{
-                      border: 'none',
-                      background: 'transparent',
-                      outline: 'none',
-                      fontSize: 13,
-                      color: '#0f172a',
-                      width: '100%',
-                      fontWeight: 500,
+                      flex: 1,
+                      minWidth: 260,
+                      display: 'flex',
+                      alignItems: 'center',
+                      background: '#fcfcfd',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: 10,
+                      padding: '11px 16px',
+                      gap: 12,
+                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+                      transition: 'all 0.15s ease',
                     }}
-                  />
-                  {txSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setTxSearchQuery('')}
+                  >
+                    <Search size={18} color="#8b5cf6" style={{ flexShrink: 0 }} />
+                    <input
+                      type="text"
+                      placeholder="Search by username, email, or transaction code..."
+                      value={txSearchQuery}
+                      onChange={(e) => setTxSearchQuery(e.target.value)}
                       style={{
-                        background: 'none',
                         border: 'none',
-                        cursor: 'pointer',
-                        color: '#94a3b8',
-                        padding: 2,
-                        display: 'flex',
-                        alignItems: 'center',
+                        background: 'transparent',
+                        outline: 'none',
+                        fontSize: 13,
+                        color: '#0f172a',
+                        width: '100%',
+                        fontWeight: 500,
                       }}
-                    >
-                      <X size={15} />
-                    </button>
-                  )}
+                    />
+                    {txSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setTxSearchQuery('')}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#94a3b8',
+                          padding: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Toggle button to include/leave rejected deposits */}
+                  <button
+                    type="button"
+                    onClick={() => setIncludeRejected((prev) => !prev)}
+                    title={includeRejected ? 'Click to show only verified deposits' : 'Click to include rejected deposits in the list'}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      whiteSpace: 'nowrap',
+                      background: includeRejected ? '#fee2e2' : '#ffffff',
+                      border: includeRejected ? '1px solid #fca5a5' : '1px solid #cbd5e1',
+                      color: includeRejected ? '#dc2626' : '#475569',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+                    }}
+                  >
+                    <Filter size={13} color={includeRejected ? '#dc2626' : '#64748b'} />
+                    <span>{includeRejected ? 'Hide Rejected Deposits' : 'Include Rejected Deposits'}</span>
+                  </button>
                 </div>
 
                 {/* 2. Transaction History Table */}
@@ -2919,13 +3107,13 @@ export default function AdminDashboardPage({ onNavigate }) {
                                         borderRadius: 6,
                                         fontSize: 11,
                                         fontWeight: 700,
-                                        background: '#ecfdf5',
-                                        border: '1px solid #a7f3d0',
-                                        color: '#059669',
+                                        background: isApproved ? '#ecfdf5' : isRejected ? '#fee2e2' : '#fef3c7',
+                                        border: isApproved ? '1px solid #a7f3d0' : isRejected ? '1px solid #fecaca' : '1px solid #fde68a',
+                                        color: isApproved ? '#059669' : isRejected ? '#dc2626' : '#d97706',
                                       }}
                                     >
-                                      <Zap size={11} />
-                                      <span>Auto Approved</span>
+                                      {isApproved ? <Check size={11} /> : isRejected ? <X size={11} /> : <Clock size={11} />}
+                                      <span>{isApproved ? 'Verified' : isRejected ? 'Rejected' : 'Pending'}</span>
                                     </span>
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#94a3b8' }}>
@@ -4046,6 +4234,238 @@ export default function AdminDashboardPage({ onNavigate }) {
           </div>
         </div>
       )}
+
+      {/* Modal 6: Ranked Depositors List Modal (Exact replica of Image 2) */}
+      {depositorModalType && (() => {
+        const isBank = depositorModalType === 'BANK_TRANSFER';
+        const list = isBank ? verifiedBankTransactions : verifiedTelebirrTransactions;
+        const total = isBank ? bankTransferTotalETB : telebirrTotalETB;
+        const title = isBank ? 'Bank Transfer Deposits' : 'Telebirr Mobile Deposits';
+        const icon = isBank ? '🏦' : '📱';
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 10006,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+            }}
+          >
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: 16,
+                maxWidth: 680,
+                width: '100%',
+                maxHeight: '90vh',
+                overflow: 'hidden',
+                boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Modal Header: Solid Green matching Image 2 */}
+              <div
+                style={{
+                  background: isBank ? '#10b981' : '#f59e0b',
+                  color: '#ffffff',
+                  padding: '18px 24px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>{icon}</span> {title}
+                  </h3>
+                  <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.9)', marginTop: 3 }}>
+                    Total: {total.toLocaleString()} ETB from {list.length} deposits
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDepositorModalType(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#ffffff',
+                    padding: 4,
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body: Numbered ranked depositors list */}
+              <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: '60vh', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {list.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 10px', color: '#94a3b8', fontSize: 13 }}>
+                    No verified deposits recorded for {title} yet.
+                  </div>
+                ) : (
+                  list.map((tx, idx) => (
+                    <div
+                      key={tx.id || idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        background: '#ffffff',
+                        border: '1px solid #f1f5f9',
+                        borderRadius: 10,
+                        gap: 12,
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                    >
+                      {/* Left: Number badge + User details */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            background: '#dcfce7',
+                            color: '#15803d',
+                            fontWeight: 800,
+                            fontSize: 12,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {idx + 1}
+                        </div>
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <strong style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {tx.userName || 'Applicant'}
+                          </strong>
+                          <span style={{ fontSize: 12, color: '#64748b', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {tx.userEmail || 'N/A'}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#94a3b8', display: 'block', marginTop: 2 }}>
+                            {formatTxDate(tx.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Middle: Clickable Receipt Thumbnail */}
+                      <div
+                        onClick={() => {
+                          if (tx.receiptUrl) {
+                            setPreviewReceiptPayment(tx);
+                          }
+                        }}
+                        title={tx.receiptUrl ? 'Click to inspect full receipt slip' : 'No receipt uploaded'}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 6,
+                          border: '1px solid #e2e8f0',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          background: '#f8fafc',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: tx.receiptUrl ? 'pointer' : 'default',
+                        }}
+                      >
+                        {tx.receiptUrl ? (
+                          <img src={tx.receiptUrl} alt="Deposit" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <Receipt size={20} color="#94a3b8" />
+                        )}
+                      </div>
+
+                      {/* Right: Amount & Badges */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
+                        <strong style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
+                          {Number(tx.amountETB || 1000).toLocaleString()} ETB
+                        </strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span
+                            style={{
+                              padding: '2px 7px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: '#ecfdf5',
+                              border: '1px solid #a7f3d0',
+                              color: '#059669',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
+                            <Check size={11} /> Verified
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleExcludePayment(tx.id)}
+                            disabled={isExcludingPaymentId === tx.id}
+                            title={tx.isExcluded ? 'Include in revenue' : 'Exclude from revenue'}
+                            style={{
+                              padding: '2px 7px',
+                              borderRadius: 6,
+                              border: '1px solid #d1d5db',
+                              background: tx.isExcluded ? '#f3f4f6' : '#ffffff',
+                              color: tx.isExcluded ? '#9ca3af' : '#374151',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
+                            <Ban size={10} color={tx.isExcluded ? '#9ca3af' : '#ef4444'} />
+                            <span>{tx.isExcluded ? 'Excluded' : 'Exclude'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Modal Footer: Full Width Close Button */}
+              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #f1f5f9' }}>
+                <button
+                  type="button"
+                  onClick={() => setDepositorModalType(null)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 0',
+                    borderRadius: 8,
+                    background: '#e2e8f0',
+                    color: '#334155',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#cbd5e1')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#e2e8f0')}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Embedded CSS for 100% Mobile & Tablet Responsiveness */}
       <style>{`
