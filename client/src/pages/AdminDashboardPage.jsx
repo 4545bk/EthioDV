@@ -855,7 +855,21 @@ export default function AdminDashboardPage({ onNavigate }) {
 
   // Combined transactions for the Transaction History Table
   const combinedTransactions = useMemo(() => {
-    const list = [...allTransactions];
+    // Map entry uniqueReference to applicantName
+    const entryNameMap = new Map();
+    entries.forEach((e) => {
+      if (e.uniqueReference && e.applicantName && e.applicantName !== 'N/A') {
+        entryNameMap.set(e.uniqueReference, e.applicantName);
+      }
+    });
+
+    const list = allTransactions.map((t) => {
+      if (t.entryRef && entryNameMap.has(t.entryRef) && (!t.userName || t.userName === 'Applicant' || t.userName.includes('@'))) {
+        return { ...t, userName: entryNameMap.get(t.entryRef) };
+      }
+      return t;
+    });
+
     const seenCodes = new Set(
       allTransactions
         .map((t) => t.claimedTransactionCode || t.ocrTxCode || t.entryRef || t.id)
@@ -885,7 +899,7 @@ export default function AdminDashboardPage({ onNavigate }) {
           userName: e.applicantName || 'Applicant',
           userEmail: e.applicantEmail || 'applicant@ethiodv.com',
           createdAt: e.createdAt,
-          isAutoApproved: true,
+          isAutoApproved: false,
         });
       }
     });
@@ -940,6 +954,14 @@ export default function AdminDashboardPage({ onNavigate }) {
   const telebirrTotalETB = useMemo(() => {
     return verifiedTelebirrTransactions.reduce((acc, t) => acc + (Number(t.amountETB) || 1000), 0);
   }, [verifiedTelebirrTransactions]);
+
+  const totalVerifiedRevenueETB = useMemo(() => {
+    return bankTransferTotalETB + telebirrTotalETB;
+  }, [bankTransferTotalETB, telebirrTotalETB]);
+
+  const totalVerifiedDepositsCount = useMemo(() => {
+    return verifiedBankTransactions.length + verifiedTelebirrTransactions.length;
+  }, [verifiedBankTransactions, verifiedTelebirrTransactions]);
 
   const primaryFiling = activeFilingData?.formData?.primary;
 
@@ -2717,126 +2739,6 @@ export default function AdminDashboardPage({ onNavigate }) {
               </div>
 
               {/* ============================================================== */}
-              {/* REVENUE CARDS: BANK TRANSFER & TELEBIRR (MATCHING IMAGE 1)     */}
-              {/* ============================================================== */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: 16,
-                  margin: '0 0 20px 0',
-                }}
-              >
-                {/* 1. Bank Transfer Revenue Card */}
-                <div
-                  onClick={() => setDepositorModalType('BANK_TRANSFER')}
-                  style={{
-                    background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: 14,
-                    padding: '20px 22px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: 180,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(5, 150, 105, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
-                      <CreditCard size={18} />
-                    </div>
-                    <span style={{ fontSize: 11, background: '#dcfce7', color: '#15803d', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      🏦 Bank Transfer
-                    </span>
-                  </div>
-
-                  <div style={{ margin: '14px 0 10px 0' }}>
-                    <div style={{ fontSize: 30, fontWeight: 800, color: '#065f46', letterSpacing: -0.5 }}>
-                      {bankTransferTotalETB.toLocaleString()} ETB
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginTop: 2 }}>
-                      Bank Transfer Revenue
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      From {verifiedBankTransactions.length} verified deposits
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid #bbf7d0', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
-                    <span style={{ color: '#059669', fontWeight: 600 }}>✓ Excludes test accounts</span>
-                    <span style={{ color: '#047857', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      👆 Click to view depositors
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2. Telebirr Revenue Card (Replacing Crypto as requested) */}
-                <div
-                  onClick={() => setDepositorModalType('TELEBIRR')}
-                  style={{
-                    background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-                    border: '1px solid #fde68a',
-                    borderRadius: 14,
-                    padding: '20px 22px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: 180,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(217, 119, 6, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
-                      <Zap size={18} />
-                    </div>
-                    <span style={{ fontSize: 11, background: '#fef3c7', color: '#b45309', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      📱 Telebirr
-                    </span>
-                  </div>
-
-                  <div style={{ margin: '14px 0 10px 0' }}>
-                    <div style={{ fontSize: 30, fontWeight: 800, color: '#92400e', letterSpacing: -0.5 }}>
-                      {telebirrTotalETB.toLocaleString()} ETB
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#d97706', marginTop: 2 }}>
-                      Telebirr Revenue
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      From {verifiedTelebirrTransactions.length} verified deposits
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid #fde68a', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
-                    <span style={{ color: '#b45309', fontWeight: 600 }}>✓ Verified mobile deposits</span>
-                    <span style={{ color: '#b45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      👆 Click to view depositors
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* ============================================================== */}
               {/* TRANSACTION HISTORY & SEARCH (EXACT REPLICA FROM SCREENSHOT)   */}
               {/* ============================================================== */}
               <div
@@ -3162,6 +3064,181 @@ export default function AdminDashboardPage({ onNavigate }) {
                       )}
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              {/* ============================================================== */}
+              {/* REVENUE SUMMARY CARDS: TOTAL, BANK TRANSFER & TELEBIRR         */}
+              {/* (POSITIONED UNDER TRANSACTION LIST & BEFORE VOLUME TREND)      */}
+              {/* ============================================================== */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 16,
+                  margin: '0 0 20px 0',
+                }}
+              >
+                {/* 1. Combined Total Verified Revenue Card */}
+                <div
+                  onClick={() => setDepositorModalType('ALL')}
+                  style={{
+                    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                    border: '1px solid #86efac',
+                    borderRadius: 14,
+                    padding: '20px 22px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: 180,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(5, 150, 105, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#047857' }}>
+                      <CheckCircle2 size={18} />
+                    </div>
+                    <span style={{ fontSize: 11, background: '#bbf7d0', color: '#065f46', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      💰 Total Verified Revenue
+                    </span>
+                  </div>
+
+                  <div style={{ margin: '14px 0 10px 0' }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: '#065f46', letterSpacing: -0.5 }}>
+                      {totalVerifiedRevenueETB.toLocaleString()} ETB
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#047857', marginTop: 2 }}>
+                      Combined Verified Revenue
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                      From {totalVerifiedDepositsCount} verified deposits
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #86efac', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                    <span style={{ color: '#047857', fontWeight: 600 }}>✓ Bank Transfer + Telebirr Total</span>
+                    <span style={{ color: '#065f46', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      👆 Click to view all depositors
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Bank Transfer Revenue Card */}
+                <div
+                  onClick={() => setDepositorModalType('BANK_TRANSFER')}
+                  style={{
+                    background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 14,
+                    padding: '20px 22px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: 180,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(5, 150, 105, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
+                      <CreditCard size={18} />
+                    </div>
+                    <span style={{ fontSize: 11, background: '#dcfce7', color: '#15803d', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      🏦 Bank Transfer
+                    </span>
+                  </div>
+
+                  <div style={{ margin: '14px 0 10px 0' }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: '#065f46', letterSpacing: -0.5 }}>
+                      {bankTransferTotalETB.toLocaleString()} ETB
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginTop: 2 }}>
+                      Bank Transfer Revenue
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                      From {verifiedBankTransactions.length} verified deposits
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #bbf7d0', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                    <span style={{ color: '#059669', fontWeight: 600 }}>✓ Excludes test accounts</span>
+                    <span style={{ color: '#047857', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      👆 Click to view depositors
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Telebirr Revenue Card */}
+                <div
+                  onClick={() => setDepositorModalType('TELEBIRR')}
+                  style={{
+                    background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                    border: '1px solid #fde68a',
+                    borderRadius: 14,
+                    padding: '20px 22px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: 180,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(217, 119, 6, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
+                      <Zap size={18} />
+                    </div>
+                    <span style={{ fontSize: 11, background: '#fef3c7', color: '#b45309', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      📱 Telebirr
+                    </span>
+                  </div>
+
+                  <div style={{ margin: '14px 0 10px 0' }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: '#92400e', letterSpacing: -0.5 }}>
+                      {telebirrTotalETB.toLocaleString()} ETB
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#d97706', marginTop: 2 }}>
+                      Telebirr Revenue
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                      From {verifiedTelebirrTransactions.length} verified deposits
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #fde68a', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                    <span style={{ color: '#b45309', fontWeight: 600 }}>✓ Verified mobile deposits</span>
+                    <span style={{ color: '#b45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      👆 Click to view depositors
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -4237,11 +4314,25 @@ export default function AdminDashboardPage({ onNavigate }) {
 
       {/* Modal 6: Ranked Depositors List Modal (Exact replica of Image 2) */}
       {depositorModalType && (() => {
+        const isAll = depositorModalType === 'ALL';
         const isBank = depositorModalType === 'BANK_TRANSFER';
-        const list = isBank ? verifiedBankTransactions : verifiedTelebirrTransactions;
-        const total = isBank ? bankTransferTotalETB : telebirrTotalETB;
-        const title = isBank ? 'Bank Transfer Deposits' : 'Telebirr Mobile Deposits';
-        const icon = isBank ? '🏦' : '📱';
+        const list = isAll
+          ? combinedTransactions.filter((t) => t.status === 'APPROVED' && !t.isExcluded)
+          : isBank
+          ? verifiedBankTransactions
+          : verifiedTelebirrTransactions;
+        const total = isAll
+          ? totalVerifiedRevenueETB
+          : isBank
+          ? bankTransferTotalETB
+          : telebirrTotalETB;
+        const title = isAll
+          ? 'All Verified Deposits (Bank & Telebirr)'
+          : isBank
+          ? 'Bank Transfer Deposits'
+          : 'Telebirr Mobile Deposits';
+        const icon = isAll ? '💰' : isBank ? '🏦' : '📱';
+        const headerBg = isAll ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : isBank ? '#10b981' : '#f59e0b';
 
         return (
           <div
@@ -4270,10 +4361,10 @@ export default function AdminDashboardPage({ onNavigate }) {
                 flexDirection: 'column',
               }}
             >
-              {/* Modal Header: Solid Green matching Image 2 */}
+              {/* Modal Header */}
               <div
                 style={{
-                  background: isBank ? '#10b981' : '#f59e0b',
+                  background: headerBg,
                   color: '#ffffff',
                   padding: '18px 24px',
                   display: 'flex',

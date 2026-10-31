@@ -457,6 +457,28 @@ router.get('/payments', requireSuperAdmin, async (req, res, next) => {
       .populate('entryId', 'uniqueReference status')
       .populate('userId', 'email fullName telegramUsername');
 
+    const entryIds = payments.map((p) => p.entryId?._id).filter(Boolean);
+    const formDocs = await FormData.find({ entryId: { $in: entryIds } });
+    const entrantNameMap = new Map();
+    for (const f of formDocs) {
+      try {
+        const dec = f.getDecryptedData();
+        if (dec?.primary?.name) {
+          const fn = dec.primary.name.firstName || '';
+          const ln = dec.primary.name.lastName || '';
+          const full = `${fn} ${ln}`.trim();
+          if (full) entrantNameMap.set(String(f.entryId), full);
+        }
+      } catch (e) {
+        if (f.primary?.name) {
+          const fn = f.primary.name.firstName || '';
+          const ln = f.primary.name.lastName || '';
+          const full = `${fn} ${ln}`.trim();
+          if (full) entrantNameMap.set(String(f.entryId), full);
+        }
+      }
+    }
+
     const list = await Promise.all(
       payments.map(async (p) => {
         let receiptUrl = null;
@@ -466,7 +488,9 @@ router.get('/payments', requireSuperAdmin, async (req, res, next) => {
           } catch (err) {}
         }
 
+        const entrantName = p.entryId?._id ? entrantNameMap.get(String(p.entryId._id)) : null;
         const userName =
+          entrantName ||
           p.userId?.fullName ||
           p.userId?.telegramUsername ||
           (p.userId?.email ? p.userId.email.split('@')[0] : (p.senderName || 'Applicant'));
