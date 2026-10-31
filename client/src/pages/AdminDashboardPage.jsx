@@ -81,6 +81,7 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [rejectReason, setRejectReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
   const [previewReceiptPayment, setPreviewReceiptPayment] = useState(null);
+  const [quickApprovingId, setQuickApprovingId] = useState(null);
 
   // 2FA Setup
   const [qrCode, setQrCode] = useState('');
@@ -314,6 +315,37 @@ export default function AdminDashboardPage({ onNavigate }) {
     } catch (err) {
       setErrorMessage(err.message || 'Approval failed');
     }
+  };
+
+  // Quick Action handlers for high-visibility top receipt bar
+  const handleQuickApprove = async (item) => {
+    if (!item) return;
+    try {
+      setQuickApprovingId(item.id || item.paymentId || item.entryId);
+      if (item.paymentId) {
+        await handleApprovePayment(item.paymentId, item.uniqueReference);
+      } else if (item.entryId) {
+        await handleApproveEntryPayment(item.entryId, item.uniqueReference);
+      }
+    } finally {
+      setQuickApprovingId(null);
+    }
+  };
+
+  const handleQuickReject = (item) => {
+    if (!item) return;
+    setRejectModalPayment({
+      id: item.paymentId,
+      entryId: item.entryId,
+      entryRef: item.uniqueReference,
+      amountETB: item.amountETB || 1000,
+      isEntry: !item.paymentId,
+    });
+  };
+
+  const handleQuickViewReceipt = (item) => {
+    if (!item) return;
+    setPreviewReceiptPayment(item.rawPayment || item.rawEntry || item);
   };
 
   // Confirm Reject Payment
@@ -684,6 +716,76 @@ export default function AdminDashboardPage({ onNavigate }) {
     { day: 'Sat', count: 0 },
   ];
   const maxDayCount = Math.max(1, ...chartDays.map((d) => d.count));
+
+  // Combined list of pending deposit receipts awaiting admin review
+  const pendingReceiptItems = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+
+    if (Array.isArray(payments)) {
+      payments.forEach((p) => {
+        const idKey = String(p.id || p._id || p.entryId || p.entryRef);
+        seen.add(idKey);
+        if (p.entryRef) seen.add(String(p.entryRef));
+        if (p.entryId) seen.add(String(p.entryId));
+
+        const matchedEntry = entries.find(
+          (e) => (p.entryId && (e.id === p.entryId || e._id === p.entryId)) ||
+                 (p.entryRef && e.uniqueReference === p.entryRef)
+        );
+
+        list.push({
+          id: p.id || p._id,
+          paymentId: p.id || p._id,
+          entryId: p.entryId || matchedEntry?.id,
+          uniqueReference: p.entryRef || matchedEntry?.uniqueReference || 'N/A',
+          applicantName: matchedEntry?.applicantName || p.senderName || 'Applicant',
+          applicantEmail: matchedEntry?.applicantEmail || p.userEmail || '',
+          applicantPhone: matchedEntry?.applicantPhone || '',
+          amountETB: p.amountETB || matchedEntry?.paymentAmountETB || 1000,
+          provider: p.provider || matchedEntry?.paymentProvider || 'Bank Transfer',
+          claimedTransactionCode: p.claimedTransactionCode || matchedEntry?.claimedTransactionCode || 'NO-CODE',
+          receiptUrl: p.receiptUrl || matchedEntry?.receiptUrl || null,
+          createdAt: p.createdAt || matchedEntry?.createdAt || new Date(),
+          rawPayment: p,
+          rawEntry: matchedEntry,
+        });
+      });
+    }
+
+    if (Array.isArray(entries)) {
+      entries.forEach((e) => {
+        const idKey = String(e.id || e.uniqueReference);
+        if (
+          !seen.has(idKey) &&
+          !seen.has(String(e.uniqueReference)) &&
+          e.receiptUrl &&
+          (e.paymentStatus === 'PENDING_VERIFICATION' || e.status === 'PAYMENT_PENDING' || e.status === 'SUBMITTED') &&
+          !['CONFIRMED', 'FILED', 'QUEUED', 'FILING_IN_PROGRESS'].includes(e.status)
+        ) {
+          seen.add(idKey);
+          list.push({
+            id: e.paymentId || e.id,
+            paymentId: e.paymentId || null,
+            entryId: e.id,
+            uniqueReference: e.uniqueReference,
+            applicantName: e.applicantName || 'Applicant',
+            applicantEmail: e.applicantEmail || '',
+            applicantPhone: e.applicantPhone || '',
+            amountETB: e.paymentAmountETB || 1000,
+            provider: e.paymentProvider || 'Bank Transfer',
+            claimedTransactionCode: e.claimedTransactionCode || 'NO-CODE',
+            receiptUrl: e.receiptUrl,
+            createdAt: e.createdAt,
+            rawPayment: null,
+            rawEntry: e,
+          });
+        }
+      });
+    }
+
+    return list;
+  }, [payments, entries]);
 
   const primaryFiling = activeFilingData?.formData?.primary;
 
@@ -2017,6 +2119,447 @@ export default function AdminDashboardPage({ onNavigate }) {
                     <span style={{ fontWeight: 700, color: '#6366f1' }}>Real Funnel</span>
                   </div>
                 </div>
+              </div>
+
+              {/* ============================================================== */}
+              {/* HIGH PRIORITY QUICK RECEIPT ACTION BAR (DIRECTLY UNDER METRICS) */}
+              {/* ============================================================== */}
+              <div
+                style={{
+                  margin: '18px 0 20px 0',
+                  background: pendingReceiptItems.length > 0
+                    ? 'linear-gradient(180deg, #fffdfa 0%, #ffffff 100%)'
+                    : '#ffffff',
+                  border: pendingReceiptItems.length > 0
+                    ? '1px solid #fed7aa'
+                    : '1px solid #e2e8f0',
+                  borderRadius: 14,
+                  padding: pendingReceiptItems.length > 0 ? '16px 20px 20px 20px' : '14px 20px',
+                  boxShadow: pendingReceiptItems.length > 0
+                    ? '0 10px 25px -5px rgba(245, 158, 11, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02)'
+                    : '0 1px 3px rgba(0, 0, 0, 0.02)',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  animation: 'fadeIn 300ms ease-out',
+                }}
+              >
+                {/* Header row */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                    marginBottom: pendingReceiptItems.length > 0 ? 14 : 0,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: pendingReceiptItems.length > 0
+                          ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                          : '#ecfdf5',
+                        color: pendingReceiptItems.length > 0 ? '#ffffff' : '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: pendingReceiptItems.length > 0
+                          ? '0 2px 8px rgba(245, 158, 11, 0.35)'
+                          : 'none',
+                      }}
+                    >
+                      {pendingReceiptItems.length > 0 ? <Zap size={16} /> : <CheckCircle2 size={16} />}
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', letterSpacing: -0.2 }}>
+                          Customer Payment Receipts Review
+                        </span>
+                        {pendingReceiptItems.length > 0 ? (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              padding: '2px 8px',
+                              borderRadius: 9999,
+                              background: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #fecaca',
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                background: '#dc2626',
+                              }}
+                            />
+                            {pendingReceiptItems.length} ACTION NEEDED
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '2px 8px',
+                              borderRadius: 9999,
+                              background: '#ecfdf5',
+                              color: '#059669',
+                              border: '1px solid #a7f3d0',
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}
+                          >
+                            <Check size={11} /> All Caught Up
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: '2px 0 0 0', fontSize: 12, color: '#64748b' }}>
+                        {pendingReceiptItems.length > 0
+                          ? 'Accept or reject customer transfer receipts below to advance entries into the official filing queue.'
+                          : 'All customer deposit receipts verified. No pending payments requiring action.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions / Refresh */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {pendingReceiptItems.length > 0 && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: '#059669',
+                          background: '#ecfdf5',
+                          border: '1px solid #a7f3d0',
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                        }}
+                      >
+                        Claimed:{' '}
+                        {pendingReceiptItems
+                          .reduce((acc, r) => acc + (Number(r.amountETB) || 1000), 0)
+                          .toLocaleString()}{' '}
+                        ETB
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => loadDashboardData()}
+                      title="Refresh pending receipts"
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#475569',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                    >
+                      <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pending Receipts Cards Grid */}
+                {pendingReceiptItems.length > 0 && (
+                  <div
+                    style={{
+                      maxHeight: '420px',
+                      overflowY: 'auto',
+                      paddingRight: 4,
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+                      gap: 12,
+                    }}
+                  >
+                    {pendingReceiptItems.map((item) => {
+                      const isApproving = quickApprovingId === (item.id || item.paymentId || item.entryId);
+
+                      return (
+                        <div
+                          key={item.id || item.uniqueReference}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 10,
+                            padding: '13px 14px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: 10,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                            e.currentTarget.style.boxShadow = '0 6px 16px -2px rgba(0,0,0,0.07)';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}
+                        >
+                          {/* Top: Name & Ref */}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                                <strong
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    color: '#0f172a',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: 180,
+                                  }}
+                                  title={item.applicantName}
+                                >
+                                  {item.applicantName}
+                                </strong>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span
+                                  style={{
+                                    fontFamily: 'monospace',
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    color: '#1e293b',
+                                    background: '#f1f5f9',
+                                    padding: '2px 6px',
+                                    borderRadius: 4,
+                                    border: '1px solid #e2e8f0',
+                                  }}
+                                >
+                                  #{item.uniqueReference}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(item.uniqueReference);
+                                    setMessage(`Copied #${item.uniqueReference}`);
+                                  }}
+                                  title="Copy Ref Code"
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    cursor: 'pointer',
+                                    padding: 2,
+                                    color: '#94a3b8',
+                                    display: 'inline-flex',
+                                  }}
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Contact hint */}
+                            <div style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {item.applicantEmail || item.applicantPhone || 'Direct Web Submission'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Middle: Deposit details & Tx code */}
+                          <div
+                            style={{
+                              background: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: 7,
+                              padding: '8px 10px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 4,
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                              <span style={{ color: '#64748b' }}>Provider & Amount</span>
+                              <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                                {item.provider || 'Bank Transfer'} •{' '}
+                                <strong style={{ color: '#059669' }}>{item.amountETB || 1000} ETB</strong>
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                              <span style={{ color: '#64748b' }}>Claimed Tx Code</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span
+                                  style={{
+                                    fontFamily: 'monospace',
+                                    fontWeight: 700,
+                                    color: '#0f172a',
+                                    background: '#ffffff',
+                                    padding: '1px 5px',
+                                    borderRadius: 3,
+                                    border: '1px solid #cbd5e1',
+                                  }}
+                                >
+                                  {item.claimedTransactionCode || 'NO-CODE'}
+                                </span>
+                                {item.claimedTransactionCode && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(item.claimedTransactionCode);
+                                      setMessage(`Copied Tx Code: ${item.claimedTransactionCode}`);
+                                    }}
+                                    title="Copy Transaction Code"
+                                    style={{
+                                      border: 'none',
+                                      background: 'transparent',
+                                      cursor: 'pointer',
+                                      padding: 0,
+                                      color: '#94a3b8',
+                                      display: 'inline-flex',
+                                    }}
+                                  >
+                                    <Copy size={11} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom Action Buttons: View Slip, Reject, Accept */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 6,
+                              paddingTop: 4,
+                              borderTop: '1px solid #f1f5f9',
+                            }}
+                          >
+                            {/* View Receipt Slip Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleQuickViewReceipt(item)}
+                              title="Inspect full receipt image"
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: 7,
+                                border: '1px solid #bfdbfe',
+                                background: '#eff6ff',
+                                color: '#1d4ed8',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                transition: 'all 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.background = '#dbeafe')}
+                              onMouseLeave={(e) => (e.currentTarget.style.background = '#eff6ff')}
+                            >
+                              <Eye size={12} />
+                              <span>View Slip</span>
+                            </button>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {/* Reject Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleQuickReject(item)}
+                                title="Reject invalid transfer receipt"
+                                style={{
+                                  padding: '6px 10px',
+                                  borderRadius: 7,
+                                  border: '1px solid #fecaca',
+                                  background: '#fef2f2',
+                                  color: '#dc2626',
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = '#fee2e2')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = '#fef2f2')}
+                              >
+                                <XCircle size={12} />
+                                <span>Reject</span>
+                              </button>
+
+                              {/* 1-Click Accept Receipt Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleQuickApprove(item)}
+                                disabled={isApproving}
+                                title="Approve payment & advance to priority queue"
+                                style={{
+                                  padding: '6px 14px',
+                                  borderRadius: 7,
+                                  border: 'none',
+                                  background: isApproving
+                                    ? '#94a3b8'
+                                    : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                  color: '#ffffff',
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  cursor: isApproving ? 'not-allowed' : 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  boxShadow: isApproving ? 'none' : '0 2px 8px rgba(16, 185, 129, 0.35)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isApproving) {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.45)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isApproving) {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.35)';
+                                  }
+                                }}
+                              >
+                                {isApproving ? (
+                                  <>
+                                    <RefreshCw size={12} className="animate-spin" />
+                                    <span>Approving...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={12} />
+                                    <span>Accept Receipt</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* ROW 2: REAL VOLUME TREND + LIVE ACTIVITY FEED */}
