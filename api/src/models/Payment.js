@@ -44,6 +44,10 @@ const PaymentSchema = new mongoose.Schema(
       default: 'PENDING_VERIFICATION',
       index: true,
     },
+    isExcluded: {
+      type: Boolean,
+      default: false,
+    },
     rejectionReason: {
       type: String,
     },

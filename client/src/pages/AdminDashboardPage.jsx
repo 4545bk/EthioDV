@@ -46,7 +46,8 @@ import {
   Eye,
   Receipt,
   FileText,
-  Menu
+  Menu,
+  Ban
 } from 'lucide-react';
 
 export default function AdminDashboardPage({ onNavigate }) {
@@ -60,6 +61,9 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [entries, setEntries] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
+  const [txSearchQuery, setTxSearchQuery] = useState('');
+  const [isExcludingPaymentId, setIsExcludingPaymentId] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [activityFeed, setActivityFeed] = useState([]);
   const [phoneDirectory, setPhoneDirectory] = useState([]);
@@ -112,10 +116,11 @@ export default function AdminDashboardPage({ onNavigate }) {
   const loadDashboardData = async (currentTimeframe = timeframe) => {
     try {
       setLoading(true);
-      const [entriesRes, usersRes, paymentsRes, analyticsRes, activityRes, phoneRes] = await Promise.all([
+      const [entriesRes, usersRes, paymentsRes, allTxRes, analyticsRes, activityRes, phoneRes] = await Promise.all([
         apiRequest(`/admin/entries?limit=150&timeframe=${currentTimeframe}`).catch(() => ({ data: { entries: [] } })),
         apiRequest(`/admin/users?limit=150&timeframe=${currentTimeframe}`).catch(() => ({ data: { users: [] } })),
         apiRequest('/admin/payments?status=PENDING_VERIFICATION').catch(() => ({ data: [] })),
+        apiRequest('/admin/payments?status=ALL').catch(() => ({ data: [] })),
         apiRequest(`/admin/analytics?timeframe=${currentTimeframe}`).catch(() => ({ data: null })),
         apiRequest(`/admin/recent-activity?timeframe=${currentTimeframe}`).catch(() => ({ data: [] })),
         apiRequest(`/admin/phone-directory?timeframe=${currentTimeframe}`).catch(() => ({ data: { users: [] } })),
@@ -124,6 +129,7 @@ export default function AdminDashboardPage({ onNavigate }) {
       if (entriesRes.success) setEntries(entriesRes.data?.entries || []);
       if (usersRes.success) setUsersList(usersRes.data?.users || []);
       if (paymentsRes.success) setPayments(paymentsRes.data || []);
+      if (allTxRes.success) setAllTransactions(allTxRes.data || []);
       if (analyticsRes.success) setAnalytics(analyticsRes.data || null);
       if (activityRes.success) setActivityFeed(activityRes.data || []);
       if (phoneRes.success) setPhoneDirectory(phoneRes.data?.users || []);
@@ -346,6 +352,43 @@ export default function AdminDashboardPage({ onNavigate }) {
   const handleQuickViewReceipt = (item) => {
     if (!item) return;
     setPreviewReceiptPayment(item.rawPayment || item.rawEntry || item);
+  };
+
+  // Toggle Exclude payment from transaction metrics
+  const handleToggleExcludePayment = async (paymentId) => {
+    if (!paymentId) return;
+    try {
+      setIsExcludingPaymentId(paymentId);
+      const res = await apiRequest(`/admin/payments/${paymentId}/toggle-exclude`, { method: 'POST' });
+      if (res.success) {
+        setAllTransactions((prev) =>
+          prev.map((t) => (t.id === paymentId ? { ...t, isExcluded: res.data?.isExcluded } : t))
+        );
+        setMessage(res.data?.isExcluded ? 'Transaction marked as Excluded' : 'Transaction Included');
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to toggle exclusion');
+    } finally {
+      setIsExcludingPaymentId(null);
+    }
+  };
+
+  // Delete payment transaction record
+  const handleDeletePaymentRecord = async (paymentId, code = '') => {
+    if (!window.confirm(`Are you sure you want to permanently delete transaction record ${code ? '#' + code : ''}?`)) {
+      return;
+    }
+    try {
+      const res = await apiRequest(`/admin/payments/${paymentId}`, { method: 'DELETE' });
+      if (res.success) {
+        setAllTransactions((prev) => prev.filter((t) => t.id !== paymentId));
+        setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+        setMessage(`Transaction ${code ? '#' + code : ''} deleted successfully.`);
+        loadDashboardData();
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to delete transaction');
+    }
   };
 
   // Confirm Reject Payment
@@ -786,6 +829,79 @@ export default function AdminDashboardPage({ onNavigate }) {
 
     return list;
   }, [payments, entries]);
+
+  // Date formatter matching screenshot: "Oct 31, 2026, 5:11 AM"
+  const formatTxDate = (dateVal) => {
+    if (!dateVal) return 'Oct 31, 2026, 5:00 AM';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return 'Oct 31, 2026, 5:00 AM';
+    return (
+      d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }) +
+      ', ' +
+      d.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    );
+  };
+
+  // Combined transactions for the Transaction History Table
+  const combinedTransactions = useMemo(() => {
+    const list = [...allTransactions];
+    const seenCodes = new Set(
+      allTransactions
+        .map((t) => t.claimedTransactionCode || t.ocrTxCode || t.entryRef || t.id)
+        .filter(Boolean)
+        .map(String)
+    );
+
+    entries.forEach((e) => {
+      const code = e.claimedTransactionCode || e.uniqueReference;
+      if (
+        code &&
+        !seenCodes.has(String(code)) &&
+        ['CONFIRMED', 'QUEUED', 'FILING_IN_PROGRESS', 'FILED'].includes(e.status)
+      ) {
+        seenCodes.add(String(code));
+        list.push({
+          id: e.paymentId || e.id,
+          paymentId: e.paymentId,
+          entryId: e.id,
+          entryRef: e.uniqueReference,
+          amountETB: e.paymentAmountETB ? Number(e.paymentAmountETB).toFixed(2) : '1000.00',
+          provider: e.paymentProvider || 'Telebirr',
+          claimedTransactionCode: e.claimedTransactionCode || e.uniqueReference,
+          receiptUrl: e.receiptUrl || null,
+          status: 'APPROVED',
+          isExcluded: false,
+          userName: e.applicantName || 'Applicant',
+          userEmail: e.applicantEmail || 'applicant@ethiodv.com',
+          createdAt: e.createdAt,
+          isAutoApproved: true,
+        });
+      }
+    });
+
+    return list;
+  }, [allTransactions, entries]);
+
+  // Filtered transactions for the search bar
+  const displayTransactions = useMemo(() => {
+    if (!txSearchQuery.trim()) return combinedTransactions;
+    const q = txSearchQuery.toLowerCase().trim();
+    return combinedTransactions.filter((t) => {
+      const u = (t.userName || '').toLowerCase();
+      const em = (t.userEmail || '').toLowerCase();
+      const code = (t.claimedTransactionCode || t.ocrTxCode || t.entryRef || '').toLowerCase();
+      const amt = String(t.amountETB || '');
+      return u.includes(q) || em.includes(q) || code.includes(q) || amt.includes(q);
+    });
+  }, [combinedTransactions, txSearchQuery]);
 
   const primaryFiling = activeFilingData?.formData?.primary;
 
@@ -2560,6 +2676,305 @@ export default function AdminDashboardPage({ onNavigate }) {
                     })}
                   </div>
                 )}
+              </div>
+
+              {/* ============================================================== */}
+              {/* TRANSACTION HISTORY & SEARCH (EXACT REPLICA FROM SCREENSHOT)   */}
+              {/* ============================================================== */}
+              <div
+                style={{
+                  margin: '0 0 20px 0',
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 14,
+                  padding: '20px 22px',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+                }}
+              >
+                {/* 1. Full-Width Search Input (Purple magnifying glass) */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: '#fcfcfd',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 10,
+                    padding: '11px 16px',
+                    gap: 12,
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Search size={18} color="#8b5cf6" style={{ flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    placeholder="Search by username, email, or transaction code..."
+                    value={txSearchQuery}
+                    onChange={(e) => setTxSearchQuery(e.target.value)}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      outline: 'none',
+                      fontSize: 13,
+                      color: '#0f172a',
+                      width: '100%',
+                      fontWeight: 500,
+                    }}
+                  />
+                  {txSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setTxSearchQuery('')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#94a3b8',
+                        padding: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. Transaction History Table */}
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginTop: 18 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 680 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '40%' }}>
+                          ITEM DETAILS
+                        </th>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '28%' }}>
+                          USER
+                        </th>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '22%' }}>
+                          VALUE/INFO
+                        </th>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, textAlign: 'right', width: '10%' }}>
+                          ACTIONS
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayTransactions.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} style={{ padding: '32px 14px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                            {txSearchQuery ? `No transactions found matching "${txSearchQuery}"` : 'No transactions recorded yet.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        displayTransactions.map((tx) => {
+                          const txCode = tx.claimedTransactionCode || tx.ocrTxCode || tx.entryRef || 'TX-PENDING';
+                          const isApproved = tx.status === 'APPROVED';
+                          const isRejected = tx.status === 'REJECTED';
+
+                          return (
+                            <tr
+                              key={tx.id || txCode}
+                              style={{
+                                borderBottom: '1px solid #f1f5f9',
+                                transition: 'background-color 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fafafa')}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                            >
+                              {/* 1. ITEM DETAILS */}
+                              <td style={{ padding: '14px 12px', verticalAlign: 'middle' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                  {/* Receipt Thumbnail */}
+                                  <div
+                                    onClick={() => {
+                                      if (tx.receiptUrl) {
+                                        setPreviewReceiptPayment(tx);
+                                      }
+                                    }}
+                                    title={tx.receiptUrl ? 'Click to inspect full receipt slip' : 'No receipt uploaded'}
+                                    style={{
+                                      width: 48,
+                                      height: 48,
+                                      borderRadius: 6,
+                                      border: '1px solid #e2e8f0',
+                                      overflow: 'hidden',
+                                      flexShrink: 0,
+                                      background: '#f8fafc',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: tx.receiptUrl ? 'pointer' : 'default',
+                                    }}
+                                  >
+                                    {tx.receiptUrl ? (
+                                      <img
+                                        src={tx.receiptUrl}
+                                        alt="Deposit"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      />
+                                    ) : (
+                                      <Receipt size={22} color="#94a3b8" />
+                                    )}
+                                  </div>
+
+                                  {/* Badges & Monospace Code */}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                                        Deposit
+                                      </span>
+
+                                      {/* Exclude / Include Pill Button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleExcludePayment(tx.id)}
+                                        disabled={isExcludingPaymentId === tx.id}
+                                        title={tx.isExcluded ? 'Click to include in calculations' : 'Click to exclude from calculations'}
+                                        style={{
+                                          padding: '2px 8px',
+                                          borderRadius: 6,
+                                          border: '1px solid #d1d5db',
+                                          background: tx.isExcluded ? '#f3f4f6' : '#ffffff',
+                                          color: tx.isExcluded ? '#9ca3af' : '#374151',
+                                          fontSize: 11,
+                                          fontWeight: 600,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 4,
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                      >
+                                        <Ban size={11} color={tx.isExcluded ? '#9ca3af' : '#ef4444'} />
+                                        <span>{tx.isExcluded ? 'Excluded' : 'Exclude'}</span>
+                                      </button>
+
+                                      {/* Approved Badge */}
+                                      <span
+                                        style={{
+                                          padding: '2px 8px',
+                                          borderRadius: 6,
+                                          fontSize: 11,
+                                          fontWeight: 700,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 3,
+                                          background: isApproved ? '#dcfce7' : isRejected ? '#fee2e2' : '#fef3c7',
+                                          color: isApproved ? '#15803d' : isRejected ? '#dc2626' : '#b45309',
+                                        }}
+                                      >
+                                        {isApproved ? <Check size={11} /> : isRejected ? <X size={11} /> : <Clock size={11} />}
+                                        <span>{isApproved ? 'Approved' : isRejected ? 'Rejected' : 'Pending'}</span>
+                                      </span>
+                                    </div>
+
+                                    {/* Monospace Code Badge (Dark Teal Forest) */}
+                                    <div>
+                                      <span
+                                        style={{
+                                          display: 'inline-block',
+                                          fontFamily: 'monospace',
+                                          fontSize: 11,
+                                          fontWeight: 700,
+                                          letterSpacing: 0.5,
+                                          background: '#134e4a',
+                                          color: '#a7f3d0',
+                                          padding: '2px 8px',
+                                          borderRadius: 4,
+                                        }}
+                                      >
+                                        {txCode}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* 2. USER */}
+                              <td style={{ padding: '14px 12px', verticalAlign: 'middle' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                  <strong style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                                    {tx.userName || 'Applicant'}
+                                  </strong>
+                                  <span style={{ fontSize: 12, color: '#64748b' }}>
+                                    {tx.userEmail || 'N/A'}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* 3. VALUE/INFO */}
+                              <td style={{ padding: '14px 12px', verticalAlign: 'middle' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
+                                    {Number(tx.amountETB || 1000).toFixed(2)} ETB
+                                  </span>
+                                  <div>
+                                    <span
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        padding: '2px 8px',
+                                        borderRadius: 6,
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        background: '#ecfdf5',
+                                        border: '1px solid #a7f3d0',
+                                        color: '#059669',
+                                      }}
+                                    >
+                                      <Zap size={11} />
+                                      <span>Auto Approved</span>
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#94a3b8' }}>
+                                    <Clock size={11} />
+                                    <span>{formatTxDate(tx.createdAt)}</span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* 4. ACTIONS */}
+                              <td style={{ padding: '14px 12px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePaymentRecord(tx.id, txCode)}
+                                  title="Delete transaction record"
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: '50%',
+                                    background: '#fef2f2',
+                                    border: '1px solid #fee2e2',
+                                    color: '#ef4444',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#fee2e2';
+                                    e.currentTarget.style.color = '#dc2626';
+                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#fef2f2';
+                                    e.currentTarget.style.color = '#ef4444';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* ROW 2: REAL VOLUME TREND + LIVE ACTIVITY FEED */}

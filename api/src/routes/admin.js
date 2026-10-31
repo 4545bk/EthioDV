@@ -432,19 +432,45 @@ ${screenshotUrl ? `\n📸 <b>ይፋዊ የስክሪንሾት ማረጋገጫ (Of
 
 /**
  * GET /api/v1/admin/payments
- * List payments for review
+ * List payments for review & transaction history
  */
 router.get('/payments', requireSuperAdmin, async (req, res, next) => {
   try {
-    const { status = 'PENDING_VERIFICATION' } = req.query;
-    const payments = await Payment.find({ status })
+    const { status, search } = req.query;
+    const filter = {};
+    if (status && status !== 'ALL') {
+      filter.status = status;
+    } else if (!status) {
+      filter.status = 'PENDING_VERIFICATION';
+    }
+
+    if (search) {
+      filter.$or = [
+        { claimedTransactionCode: { $regex: search.trim(), $options: 'i' } },
+        { ocrTxCode: { $regex: search.trim(), $options: 'i' } },
+        { senderName: { $regex: search.trim(), $options: 'i' } },
+      ];
+    }
+
+    const payments = await Payment.find(filter)
       .sort({ createdAt: -1 })
       .populate('entryId', 'uniqueReference status')
-      .populate('userId', 'email telegramUsername');
+      .populate('userId', 'email fullName telegramUsername');
 
     const list = await Promise.all(
       payments.map(async (p) => {
-        const receiptUrl = await getPresignedDownloadUrl(p.receiptFileKey);
+        let receiptUrl = null;
+        if (p.receiptFileKey) {
+          try {
+            receiptUrl = await getPresignedDownloadUrl(p.receiptFileKey);
+          } catch (err) {}
+        }
+
+        const userName =
+          p.userId?.fullName ||
+          p.userId?.telegramUsername ||
+          (p.userId?.email ? p.userId.email.split('@')[0] : (p.senderName || 'Applicant'));
+
         return {
           id: p._id,
           entryId: p.entryId?._id,
@@ -461,7 +487,9 @@ router.get('/payments', requireSuperAdmin, async (req, res, next) => {
           ocrIsReceipt: p.ocrIsReceipt,
           receiptUrl,
           status: p.status,
-          userEmail: p.userId?.email,
+          isExcluded: Boolean(p.isExcluded),
+          userName,
+          userEmail: p.userId?.email || 'N/A',
           userTelegram: p.userId?.telegramUsername,
           createdAt: p.createdAt,
         };
@@ -469,6 +497,51 @@ router.get('/payments', requireSuperAdmin, async (req, res, next) => {
     );
 
     return res.json({ success: true, data: list });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/v1/admin/payments/:paymentId/toggle-exclude
+ * Super Admin toggles exclusion of payment from calculations
+ */
+router.post('/payments/:paymentId/toggle-exclude', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const payment = await Payment.findById(req.params.paymentId);
+    if (!payment) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Payment not found' } });
+    }
+
+    payment.isExcluded = !payment.isExcluded;
+    await payment.save();
+
+    return res.json({ success: true, data: { isExcluded: payment.isExcluded } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/v1/admin/payments/:paymentId
+ * Super Admin deletes payment record
+ */
+router.delete('/payments/:paymentId', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const payment = await Payment.findById(req.params.paymentId);
+    if (!payment) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Payment not found' } });
+    }
+
+    await Payment.findByIdAndDelete(req.params.paymentId);
+    await recordAudit(req, {
+      action: 'DELETE_PAYMENT',
+      targetEntity: 'Payment',
+      targetId: req.params.paymentId,
+      metadata: { claimedTransactionCode: payment.claimedTransactionCode },
+    });
+
+    return res.json({ success: true, data: { message: 'Payment record deleted' } });
   } catch (err) {
     next(err);
   }
