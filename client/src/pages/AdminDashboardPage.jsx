@@ -3068,7 +3068,7 @@ export default function AdminDashboardPage({ onNavigate }) {
               </div>
 
               {/* ============================================================== */}
-              {/* REVENUE SUMMARY CARD: TOTAL BANK TRANSFER & MOBILE (TOGETHER) */}
+              {/* TOTAL VERIFIED REVENUE CARD (ONLY CARD KEPT AS REQUESTED)      */}
               {/* (POSITIONED UNDER TRANSACTION LIST & BEFORE VOLUME TREND)      */}
               {/* ============================================================== */}
               <div style={{ margin: '0 0 20px 0' }}>
@@ -3076,7 +3076,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                   onClick={() => setDepositorModalType('ALL')}
                   style={{
                     background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
-                    border: '1px solid #bbf7d0',
+                    border: '1px solid #86efac',
                     borderRadius: 14,
                     padding: '20px 24px',
                     cursor: 'pointer',
@@ -3090,7 +3090,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(5, 150, 105, 0.12)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(5, 150, 105, 0.15)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
@@ -3099,10 +3099,10 @@ export default function AdminDashboardPage({ onNavigate }) {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
-                      <CreditCard size={18} />
+                      <CheckCircle2 size={18} />
                     </div>
-                    <span style={{ fontSize: 11, background: '#dcfce7', color: '#15803d', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      🏦 Bank Transfer
+                    <span style={{ fontSize: 11, background: '#dcfce7', color: '#065f46', padding: '3px 9px', borderRadius: 9999, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      💰 Total Verified Revenue
                     </span>
                   </div>
 
@@ -3111,14 +3111,14 @@ export default function AdminDashboardPage({ onNavigate }) {
                       {totalVerifiedRevenueETB.toLocaleString()} ETB
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginTop: 2 }}>
-                      Bank Transfer Revenue
+                      Total Verified Revenue
                     </div>
                     <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
                       From {totalVerifiedDepositsCount} verified deposits
                     </div>
                   </div>
 
-                  <div style={{ borderTop: '1px solid #bbf7d0', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                  <div style={{ borderTop: '1px solid #86efac', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
                     <span style={{ color: '#059669', fontWeight: 600 }}>✓ Excludes test accounts</span>
                     <span style={{ color: '#047857', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                       👆 Click to view depositors
@@ -4223,8 +4223,8 @@ export default function AdminDashboardPage({ onNavigate }) {
       {depositorModalType && (() => {
         const list = combinedTransactions.filter((t) => t.status === 'APPROVED' && !t.isExcluded);
         const total = totalVerifiedRevenueETB;
-        const title = 'Bank Transfer Deposits';
-        const icon = '🏦';
+        const title = 'Total Verified Deposits';
+        const icon = '💰';
         const headerBg = '#10b981';
 
         return (
