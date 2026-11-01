@@ -67,6 +67,7 @@ export default function AdminDashboardPage({ onNavigate }) {
   const [includeRejected, setIncludeRejected] = useState(false);
   const [depositorModalType, setDepositorModalType] = useState(null); // 'BANK_TRANSFER' | 'TELEBIRR' | null
   const [isExcludingPaymentId, setIsExcludingPaymentId] = useState(null);
+  const [isRefundingPaymentId, setIsRefundingPaymentId] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [activityFeed, setActivityFeed] = useState([]);
   const [phoneDirectory, setPhoneDirectory] = useState([]);
@@ -373,6 +374,45 @@ export default function AdminDashboardPage({ onNavigate }) {
       setErrorMessage(err.message || 'Failed to toggle exclusion');
     } finally {
       setIsExcludingPaymentId(null);
+    }
+  };
+
+  // Set or clear refund status (REFUND_90, REFUND_50, or NONE)
+  const handleSetRefund = async (txId, refundType) => {
+    if (!txId) return;
+    try {
+      setIsRefundingPaymentId(txId);
+      const res = await apiRequest(`/admin/payments/${txId}/set-refund`, {
+        method: 'POST',
+        body: JSON.stringify({ refundType }),
+      });
+      if (res.success) {
+        setAllTransactions((prev) =>
+          prev.map((t) =>
+            t.id === txId || t.paymentId === txId || t.entryId === txId
+              ? { ...t, refundStatus: res.data?.refundStatus, refundAmountETB: res.data?.refundAmountETB }
+              : t
+          )
+        );
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === txId || e.paymentId === txId
+              ? { ...e, refundStatus: res.data?.refundStatus, refundAmountETB: res.data?.refundAmountETB }
+              : e
+          )
+        );
+        const label =
+          refundType === 'REFUND_90'
+            ? '90% (900 ETB) Refund applied'
+            : refundType === 'REFUND_50'
+            ? '50% Half (500 ETB) Refund applied'
+            : 'Refund cleared (Full amount restored to revenue)';
+        setMessage(`✓ ${label}`);
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to update refund status');
+    } finally {
+      setIsRefundingPaymentId(null);
     }
   };
 
@@ -855,19 +895,31 @@ export default function AdminDashboardPage({ onNavigate }) {
 
   // Combined transactions for the Transaction History Table
   const combinedTransactions = useMemo(() => {
-    // Map entry uniqueReference to applicantName
+    // Map entry uniqueReference to applicantName and refund status
     const entryNameMap = new Map();
+    const entryRefundMap = new Map();
     entries.forEach((e) => {
       if (e.uniqueReference && e.applicantName && e.applicantName !== 'N/A') {
         entryNameMap.set(e.uniqueReference, e.applicantName);
       }
+      if (e.uniqueReference && e.refundStatus && e.refundStatus !== 'NONE') {
+        entryRefundMap.set(e.uniqueReference, { status: e.refundStatus, amount: e.refundAmountETB });
+      }
     });
 
     const list = allTransactions.map((t) => {
+      let userName = t.userName;
       if (t.entryRef && entryNameMap.has(t.entryRef) && (!t.userName || t.userName === 'Applicant' || t.userName.includes('@'))) {
-        return { ...t, userName: entryNameMap.get(t.entryRef) };
+        userName = entryNameMap.get(t.entryRef);
       }
-      return t;
+      let refundStatus = t.refundStatus || 'NONE';
+      let refundAmountETB = t.refundAmountETB || 0;
+      if (refundStatus === 'NONE' && t.entryRef && entryRefundMap.has(t.entryRef)) {
+        const r = entryRefundMap.get(t.entryRef);
+        refundStatus = r.status;
+        refundAmountETB = r.amount;
+      }
+      return { ...t, userName, refundStatus, refundAmountETB };
     });
 
     const seenCodes = new Set(
@@ -896,6 +948,8 @@ export default function AdminDashboardPage({ onNavigate }) {
           receiptUrl: e.receiptUrl || null,
           status: 'APPROVED',
           isExcluded: false,
+          refundStatus: e.refundStatus || 'NONE',
+          refundAmountETB: e.refundAmountETB || 0,
           userName: e.applicantName || 'Applicant',
           userEmail: e.applicantEmail || 'applicant@ethiodv.com',
           createdAt: e.createdAt,
@@ -927,6 +981,19 @@ export default function AdminDashboardPage({ onNavigate }) {
     });
   }, [combinedTransactions, txSearchQuery, includeRejected]);
 
+  // Net revenue per transaction deducting refunded money
+  const getTxRefundedETB = (t) => {
+    const gross = Number(t.amountETB) || 1000;
+    if (t.refundStatus === 'REFUND_90') return Math.round(gross * 0.9);
+    if (t.refundStatus === 'REFUND_50') return Math.round(gross * 0.5);
+    return Number(t.refundAmountETB) || 0;
+  };
+
+  const getTxNetETB = (t) => {
+    const gross = Number(t.amountETB) || 1000;
+    return Math.max(0, gross - getTxRefundedETB(t));
+  };
+
   // Verified Bank Transfer Deposits (Excludes Telebirr & Excluded)
   const verifiedBankTransactions = useMemo(() => {
     return combinedTransactions.filter(
@@ -948,16 +1015,23 @@ export default function AdminDashboardPage({ onNavigate }) {
   }, [combinedTransactions]);
 
   const bankTransferTotalETB = useMemo(() => {
-    return verifiedBankTransactions.reduce((acc, t) => acc + (Number(t.amountETB) || 1000), 0);
+    return verifiedBankTransactions.reduce((acc, t) => acc + getTxNetETB(t), 0);
   }, [verifiedBankTransactions]);
 
   const telebirrTotalETB = useMemo(() => {
-    return verifiedTelebirrTransactions.reduce((acc, t) => acc + (Number(t.amountETB) || 1000), 0);
+    return verifiedTelebirrTransactions.reduce((acc, t) => acc + getTxNetETB(t), 0);
   }, [verifiedTelebirrTransactions]);
 
   const totalVerifiedRevenueETB = useMemo(() => {
     return bankTransferTotalETB + telebirrTotalETB;
   }, [bankTransferTotalETB, telebirrTotalETB]);
+
+  const totalRefundedMoneyETB = useMemo(() => {
+    return [...verifiedBankTransactions, ...verifiedTelebirrTransactions].reduce(
+      (acc, t) => acc + getTxRefundedETB(t),
+      0
+    );
+  }, [verifiedBankTransactions, verifiedTelebirrTransactions]);
 
   const totalVerifiedDepositsCount = useMemo(() => {
     return verifiedBankTransactions.length + verifiedTelebirrTransactions.length;
@@ -2832,19 +2906,22 @@ export default function AdminDashboardPage({ onNavigate }) {
 
                 {/* 2. Transaction History Table */}
                 <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginTop: 18 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 680 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 840 }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '40%' }}>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '28%' }}>
                           ITEM DETAILS
                         </th>
-                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '28%' }}>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '20%' }}>
                           USER
                         </th>
-                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '22%' }}>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '18%' }}>
                           VALUE/INFO
                         </th>
-                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, textAlign: 'right', width: '10%' }}>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, width: '26%' }}>
+                          REFUNDED MONEY (90% / 50%)
+                        </th>
+                        <th style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, textAlign: 'right', width: '8%' }}>
                           ACTIONS
                         </th>
                       </tr>
@@ -2852,7 +2929,7 @@ export default function AdminDashboardPage({ onNavigate }) {
                     <tbody>
                       {displayTransactions.length === 0 ? (
                         <tr>
-                          <td colSpan={4} style={{ padding: '32px 14px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                          <td colSpan={5} style={{ padding: '32px 14px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
                             {txSearchQuery ? `No transactions found matching "${txSearchQuery}"` : 'No transactions recorded yet.'}
                           </td>
                         </tr>
@@ -2996,9 +3073,25 @@ export default function AdminDashboardPage({ onNavigate }) {
                               {/* 3. VALUE/INFO */}
                               <td style={{ padding: '14px 12px', verticalAlign: 'middle' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
-                                    {Number(tx.amountETB || 1000).toFixed(2)} ETB
-                                  </span>
+                                  {tx.refundStatus && tx.refundStatus !== 'NONE' ? (
+                                    <>
+                                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                        <span style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
+                                          {getTxNetETB(tx).toFixed(2)} ETB
+                                        </span>
+                                        <span style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'line-through' }}>
+                                          {Number(tx.amountETB || 1000).toFixed(2)} ETB
+                                        </span>
+                                      </div>
+                                      <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626' }}>
+                                        -{getTxRefundedETB(tx)} ETB Refunded
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
+                                      {Number(tx.amountETB || 1000).toFixed(2)} ETB
+                                    </span>
+                                  )}
                                   <div>
                                     <span
                                       style={{
@@ -3025,7 +3118,180 @@ export default function AdminDashboardPage({ onNavigate }) {
                                 </div>
                               </td>
 
-                              {/* 4. ACTIONS */}
+                              {/* 4. REFUNDED MONEY (90% / 50%) */}
+                              <td style={{ padding: '14px 12px', verticalAlign: 'middle' }}>
+                                {(() => {
+                                  const txTargetId = tx.id || tx.paymentId || tx.entryId;
+                                  const isUpdatingThis = isRefundingPaymentId === txTargetId;
+                                  const isRefund90 = tx.refundStatus === 'REFUND_90';
+                                  const isRefund50 = tx.refundStatus === 'REFUND_50';
+                                  const isRefunded = isRefund90 || isRefund50;
+
+                                  if (isRefunded) {
+                                    return (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+                                        {/* Refund Status Badge */}
+                                        <div
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 5,
+                                            padding: '4px 10px',
+                                            borderRadius: 8,
+                                            fontSize: 12,
+                                            fontWeight: 800,
+                                            background: isRefund90 ? '#fef2f2' : '#fffbeb',
+                                            border: isRefund90 ? '1px solid #fca5a5' : '1px solid #fcd34d',
+                                            color: isRefund90 ? '#b91c1c' : '#b45309',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                          }}
+                                        >
+                                          <span>💸</span>
+                                          <span>
+                                            {isRefund90 ? '90% Refunded (-900 ETB)' : '50% (Half) Refunded (-500 ETB)'}
+                                          </span>
+                                        </div>
+
+                                        <div style={{ fontSize: 11, color: '#64748b' }}>
+                                          Net retained: <strong>{getTxNetETB(tx)} ETB</strong> (Excluded from revenue)
+                                        </div>
+
+                                        {/* Quick switch and cancel buttons */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                          <button
+                                            type="button"
+                                            disabled={isUpdatingThis}
+                                            onClick={() => handleSetRefund(txTargetId, isRefund90 ? 'REFUND_50' : 'REFUND_90')}
+                                            style={{
+                                              padding: '3px 8px',
+                                              fontSize: 11,
+                                              fontWeight: 700,
+                                              borderRadius: 6,
+                                              border: '1px solid #cbd5e1',
+                                              background: '#ffffff',
+                                              color: '#334155',
+                                              cursor: isUpdatingThis ? 'wait' : 'pointer',
+                                              transition: 'all 0.15s ease',
+                                            }}
+                                            onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+                                            onMouseLeave={(e) => (e.currentTarget.style.background = '#ffffff')}
+                                            title={isRefund90 ? 'Switch to 50% refund (-500 ETB)' : 'Switch to 90% refund (-900 ETB)'}
+                                          >
+                                            {isUpdatingThis ? 'Saving...' : isRefund90 ? 'Change to 50% (Half)' : 'Change to 90%'}
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            disabled={isUpdatingThis}
+                                            onClick={() => handleSetRefund(txTargetId, 'NONE')}
+                                            style={{
+                                              padding: '3px 8px',
+                                              fontSize: 11,
+                                              fontWeight: 600,
+                                              borderRadius: 6,
+                                              border: '1px solid #fecaca',
+                                              background: '#fff1f2',
+                                              color: '#e11d48',
+                                              cursor: isUpdatingThis ? 'wait' : 'pointer',
+                                              transition: 'all 0.15s ease',
+                                            }}
+                                            onMouseEnter={(e) => (e.currentTarget.style.background = '#ffe4e6')}
+                                            onMouseLeave={(e) => (e.currentTarget.style.background = '#fff1f2')}
+                                            title="Cancel refund and restore full deposit to Total Verified Revenue"
+                                          >
+                                            ✕ Clear
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  // Default: Not refunded, show both 90% and 50% buttons
+                                  return (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                        {/* 90% Refund Button */}
+                                        <button
+                                          type="button"
+                                          disabled={isUpdatingThis}
+                                          onClick={() => handleSetRefund(txTargetId, 'REFUND_90')}
+                                          title="Mark 90% Refunded (-900 ETB). Deducts 900 ETB from Total Verified Revenue."
+                                          style={{
+                                            padding: '5px 10px',
+                                            borderRadius: 8,
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            cursor: isUpdatingThis ? 'wait' : 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 4,
+                                            background: '#fff1f2',
+                                            border: '1px solid #fecdd3',
+                                            color: '#be123c',
+                                            transition: 'all 0.15s ease',
+                                            boxShadow: '0 1px 2px rgba(190, 18, 60, 0.05)',
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            if (!isUpdatingThis) {
+                                              e.currentTarget.style.background = '#ffe4e6';
+                                              e.currentTarget.style.borderColor = '#fda4af';
+                                            }
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            if (!isUpdatingThis) {
+                                              e.currentTarget.style.background = '#fff1f2';
+                                              e.currentTarget.style.borderColor = '#fecdd3';
+                                            }
+                                          }}
+                                        >
+                                          <span>💸</span>
+                                          <span>{isUpdatingThis ? 'Saving...' : '90% Refund'}</span>
+                                        </button>
+
+                                        {/* 50% Half Refund Button */}
+                                        <button
+                                          type="button"
+                                          disabled={isUpdatingThis}
+                                          onClick={() => handleSetRefund(txTargetId, 'REFUND_50')}
+                                          title="Mark 50% (Half) Refunded (-500 ETB). Deducts 500 ETB from Total Verified Revenue."
+                                          style={{
+                                            padding: '5px 10px',
+                                            borderRadius: 8,
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            cursor: isUpdatingThis ? 'wait' : 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 4,
+                                            background: '#fffbeb',
+                                            border: '1px solid #fde68a',
+                                            color: '#b45309',
+                                            transition: 'all 0.15s ease',
+                                            boxShadow: '0 1px 2px rgba(180, 83, 9, 0.05)',
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            if (!isUpdatingThis) {
+                                              e.currentTarget.style.background = '#fef3c7';
+                                              e.currentTarget.style.borderColor = '#fcd34d';
+                                            }
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            if (!isUpdatingThis) {
+                                              e.currentTarget.style.background = '#fffbeb';
+                                              e.currentTarget.style.borderColor = '#fde68a';
+                                            }
+                                          }}
+                                        >
+                                          <span>½</span>
+                                          <span>{isUpdatingThis ? 'Saving...' : 'Half (50%)'}</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
+
+                              {/* 5. ACTIONS */}
                               <td style={{ padding: '14px 12px', verticalAlign: 'middle', textAlign: 'right' }}>
                                 <button
                                   type="button"
@@ -3113,8 +3379,13 @@ export default function AdminDashboardPage({ onNavigate }) {
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginTop: 2 }}>
                       Total Verified Revenue
                     </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      From {totalVerifiedDepositsCount} verified deposits
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span>From {totalVerifiedDepositsCount} verified deposits</span>
+                      {totalRefundedMoneyETB > 0 && (
+                        <span style={{ color: '#b91c1c', fontWeight: 700, background: '#fee2e2', padding: '1px 7px', borderRadius: 6, fontSize: 11 }}>
+                          • {totalRefundedMoneyETB.toLocaleString()} ETB refunded (deducted)
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -4374,9 +4645,31 @@ export default function AdminDashboardPage({ onNavigate }) {
 
                       {/* Right: Amount & Badges */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
-                        <strong style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
-                          {Number(tx.amountETB || 1000).toLocaleString()} ETB
-                        </strong>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                          <strong style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
+                            {getTxNetETB(tx).toLocaleString()} ETB
+                          </strong>
+                          {tx.refundStatus && tx.refundStatus !== 'NONE' && (
+                            <span style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'line-through' }}>
+                              {Number(tx.amountETB || 1000).toLocaleString()} ETB
+                            </span>
+                          )}
+                        </div>
+                        {tx.refundStatus && tx.refundStatus !== 'NONE' && (
+                          <span
+                            style={{
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              background: tx.refundStatus === 'REFUND_90' ? '#fee2e2' : '#fef3c7',
+                              color: tx.refundStatus === 'REFUND_90' ? '#b91c1c' : '#b45309',
+                              border: tx.refundStatus === 'REFUND_90' ? '1px solid #fca5a5' : '1px solid #fde68a',
+                            }}
+                          >
+                            {tx.refundStatus === 'REFUND_90' ? '💸 90% Refunded (-900 ETB)' : '💸 50% Refunded (-500 ETB)'}
+                          </span>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span
                             style={{

@@ -48,6 +48,18 @@ const PaymentSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    refundStatus: {
+      type: String,
+      enum: ['NONE', 'REFUND_90', 'REFUND_50'],
+      default: 'NONE',
+    },
+    refundAmountETB: {
+      type: Number,
+      default: 0,
+    },
+    refundedAt: {
+      type: Date,
+    },
     rejectionReason: {
       type: String,
     },

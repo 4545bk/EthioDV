@@ -120,6 +120,8 @@ router.get('/queue', async (req, res, next) => {
           lockExpiresAt: e.lockExpiresAt,
           confirmationNumber: e.getConfirmationNumber(),
           filedAt: e.filedAt,
+          refundStatus: e.refundStatus || 'NONE',
+          refundAmountETB: e.refundAmountETB || 0,
           createdAt: e.createdAt,
         };
       })
@@ -512,6 +514,8 @@ router.get('/payments', requireSuperAdmin, async (req, res, next) => {
           receiptUrl,
           status: p.status,
           isExcluded: Boolean(p.isExcluded),
+          refundStatus: p.refundStatus || 'NONE',
+          refundAmountETB: p.refundAmountETB || 0,
           userName,
           userEmail: p.userId?.email || 'N/A',
           userTelegram: p.userId?.telegramUsername,
@@ -541,6 +545,70 @@ router.post('/payments/:paymentId/toggle-exclude', requireSuperAdmin, async (req
     await payment.save();
 
     return res.json({ success: true, data: { isExcluded: payment.isExcluded } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/v1/admin/payments/:id/set-refund
+ * Super Admin sets or clears refund status for a payment or entry (90%, 50% half, or NONE)
+ */
+router.post('/payments/:id/set-refund', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { refundType } = req.body; // 'NONE' | 'REFUND_90' | 'REFUND_50'
+    const id = req.params.id;
+
+    if (!['NONE', 'REFUND_90', 'REFUND_50'].includes(refundType)) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid refund type' } });
+    }
+
+    let payment = await Payment.findById(id);
+    let entry = null;
+
+    if (!payment) {
+      entry = await Entry.findById(id);
+      if (entry) {
+        payment = await Payment.findOne({ entryId: entry._id });
+      }
+    } else {
+      entry = await Entry.findById(payment.entryId);
+    }
+
+    if (!payment && !entry) {
+      return res.status(404).json({ success: false, error: { message: 'Payment or Entry not found' } });
+    }
+
+    let refundAmountETB = 0;
+    const baseETB = payment ? (payment.amountETBCents / 100) : (entry.paymentAmountETB || 1000);
+
+    if (refundType === 'REFUND_90') {
+      refundAmountETB = Math.round(baseETB * 0.9);
+    } else if (refundType === 'REFUND_50') {
+      refundAmountETB = Math.round(baseETB * 0.5);
+    }
+
+    if (payment) {
+      payment.refundStatus = refundType;
+      payment.refundAmountETB = refundAmountETB;
+      payment.refundedAt = refundType !== 'NONE' ? new Date() : null;
+      await payment.save();
+    }
+
+    if (entry) {
+      entry.refundStatus = refundType;
+      entry.refundAmountETB = refundAmountETB;
+      await entry.save();
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        id,
+        refundStatus: refundType,
+        refundAmountETB,
+      },
+    });
   } catch (err) {
     next(err);
   }

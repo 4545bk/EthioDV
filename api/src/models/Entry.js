@@ -41,6 +41,15 @@ const EntrySchema = new mongoose.Schema(
       type: Date,
       index: true,
     },
+    refundStatus: {
+      type: String,
+      enum: ['NONE', 'REFUND_90', 'REFUND_50'],
+      default: 'NONE',
+    },
+    refundAmountETB: {
+      type: Number,
+      default: 0,
+    },
     // Operator Lock Mechanism
     lockedBy: {
       type: mongoose.Schema.Types.ObjectId,
